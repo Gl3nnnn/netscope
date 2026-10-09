@@ -44,7 +44,8 @@ describe('runTick', () => {
     expect(typeof sample.memoryPct).toBe('number')
   })
 
-  it('is deterministic for the same seed and inputs', () => {    const devices = buildSeedDevices(mulberry32(7), NOW)
+  it('is deterministic for the same seed and inputs', () => {
+    const devices = buildSeedDevices(mulberry32(7), NOW)
     const run = () =>
       runTick({
         devices,

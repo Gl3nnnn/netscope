@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   ArrowDown,
   ArrowUp,
@@ -388,7 +389,12 @@ export function DevicesPage() {
               {rows.map((device) => (
                 <TableRow key={device.id}>
                   <TableCell>
-                    <div className="font-medium">{device.name}</div>
+                    <Link
+                      to={`/devices/${device.id}`}
+                      className="font-medium hover:text-primary hover:underline"
+                    >
+                      {device.name}
+                    </Link>
                     <div className="font-mono text-xs text-muted-foreground">
                       {device.ip}
                     </div>

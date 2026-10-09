@@ -12,7 +12,12 @@ import { round, clamp } from '@/lib/format'
 import { mulberry32, type Rng } from '@/simulation/random'
 import { buildSeedDevices, deviceFromInput } from '@/simulation/seed'
 import { runTick } from '@/simulation/engine'
-import { exportDevicesJson, STORAGE_VERSION, migratePersistedNetwork, type PersistedNetwork } from '@/storage/persistence'
+import {
+  exportDevicesJson,
+  STORAGE_VERSION,
+  migratePersistedNetwork,
+  type PersistedNetwork,
+} from '@/storage/persistence'
 import { createDebouncedStorage } from '@/storage/debouncedStorage'
 import { useSettingsStore } from './useSettingsStore'
 

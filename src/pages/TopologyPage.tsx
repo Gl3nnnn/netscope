@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Filter, Search, Share2, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { ArrowRight, Filter, Search, Share2, X } from 'lucide-react'
 import type { Device, DeviceStatus, DeviceType } from '@/types'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -244,6 +245,12 @@ export function TopologyPage() {
                   />
                   Node radius {NODE_RADIUS[selectedLive.type]}px - DEMO data
                 </div>
+
+                <Button asChild variant="outline" size="sm" className="w-full">
+                  <Link to={`/devices/${selectedLive.id}`}>
+                    View full details <ArrowRight className="size-3.5" />
+                  </Link>
+                </Button>
               </div>
             )}
           </CardContent>

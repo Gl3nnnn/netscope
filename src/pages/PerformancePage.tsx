@@ -187,10 +187,7 @@ export function PerformancePage() {
                 label="Min availability"
                 value={`${round(summary.minAvailability, 3)}%`}
               />
-              <Summary
-                label="Avg CPU"
-                value={`${round(summary.cpu, 1)}%`}
-              />
+              <Summary label="Avg CPU" value={`${round(summary.cpu, 1)}%`} />
               <Summary
                 label="Peak CPU"
                 value={`${round(summary.maxCpu, 1)}%`}
@@ -525,9 +522,7 @@ export function PerformancePage() {
                     content={
                       <ChartTooltip
                         labelFormatter={(value) => formatClock(Number(value))}
-                        valueFormatter={(value) =>
-                          formatMbps(Number(value))
-                        }
+                        valueFormatter={(value) => formatMbps(Number(value))}
                       />
                     }
                   />

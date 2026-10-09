@@ -13,6 +13,11 @@ const TopologyPage = lazy(() =>
 const DevicesPage = lazy(() =>
   import('@/pages/DevicesPage').then((m) => ({ default: m.DevicesPage })),
 )
+const DeviceDetailPage = lazy(() =>
+  import('@/pages/DeviceDetailPage').then((m) => ({
+    default: m.DeviceDetailPage,
+  })),
+)
 const PerformancePage = lazy(() =>
   import('@/pages/PerformancePage').then((m) => ({
     default: m.PerformancePage,
@@ -54,6 +59,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <DevicesPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="devices/:id"
+            element={
+              <ErrorBoundary>
+                <DeviceDetailPage />
               </ErrorBoundary>
             }
           />
