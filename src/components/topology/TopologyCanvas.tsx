@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Network,
   Minus,
@@ -8,13 +8,16 @@ import {
   Server,
   Shield,
   Wifi,
+  Focus,
   type LucideIcon,
 } from 'lucide-react'
-import { select } from 'd3'
+import { polygonCentroid, polygonHull, select } from 'd3'
 import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomTransform } from 'd3'
 import type { Device, DeviceType, DeviceStatus } from '@/types'
 import { STATUS_HEX, DEVICE_STATUS_LABELS } from '@/lib/health'
-import { NODE_RADIUS, type TopoLink } from './topology'
+import { NODE_RADIUS } from './topology'
+import type { TopoLink } from './topology'
+import { focusGroup } from './topology'
 import { useTopologyLayout, type TopoNode } from '@/hooks/useTopologyLayout'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -44,6 +47,7 @@ export function TopologyCanvas({
   const svgRef = useRef<SVGSVGElement>(null)
   const [size, setSize] = useState({ width: 800, height: 560 })
   const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity)
+  const [focusMode, setFocusMode] = useState(false)
 
   const dragRef = useRef<{
     id: string
@@ -131,6 +135,34 @@ export function TopologyCanvas({
     return device ? STATUS_HEX[device.status] : '#334155'
   }
 
+  const siteHulls = useMemo(() => {
+    const bySite = new Map<string, TopoNode[]>()
+    for (const node of layout.nodes) {
+      const list = bySite.get(node.device.site) ?? []
+      list.push(node)
+      bySite.set(node.device.site, list)
+    }
+    return [...bySite.entries()].map(([site, nodes]) => {
+      const points = nodes.map((n) => [n.x, n.y] as [number, number])
+      const hull = points.length >= 3 ? (polygonHull(points) ?? points) : points
+      const centroid = polygonCentroid(hull)
+      return { site, hull, centroid, count: nodes.length }
+    })
+  }, [layout.nodes])
+
+  const ego = useMemo(() => {
+    if (!focusMode || !selectedId) return null
+    const nodeIds = layout.nodes.map((node) => node.id)
+    const flatLinks = layout.links.map((link) => ({
+      source: typeof link.source === 'string' ? link.source : link.source.id,
+      target: typeof link.target === 'string' ? link.target : link.target.id,
+    }))
+    return focusGroup(nodeIds, flatLinks, selectedId)
+  }, [focusMode, selectedId, layout.links, layout.nodes])
+
+  const flowDuration = (throughputMbps: number) =>
+    Math.max(0.6, Math.min(3, 3 - throughputMbps / 1200))
+
   const statuses: DeviceStatus[] = ['online', 'degraded', 'offline']
 
   return (
@@ -149,24 +181,91 @@ export function TopologyCanvas({
         <g
           transform={`translate(${transform.x},${transform.y}) scale(${transform.k})`}
         >
-          {layout.links.map((link, index) => {
-            const source = link.source as TopoNode
-            const target = link.target as TopoNode
-            if (typeof source === 'string' || typeof target === 'string')
-              return null
+          {siteHulls.map(({ site, hull, centroid, count }) => {
+            const center = centroid ?? hull[0]
             return (
-              <line
-                key={index}
-                x1={source.x}
-                y1={source.y}
-                x2={target.x}
-                y2={target.y}
-                stroke={linkStroke(source)}
-                strokeOpacity={0.28}
-                strokeWidth={1.5}
-              />
+              <g key={site} opacity={focusMode ? 0.5 : 1}>
+                {count < 3 ? (
+                  <circle
+                    cx={center[0]}
+                    cy={center[1]}
+                    r={36}
+                    fill="hsl(199 89% 55% / 0.05)"
+                    stroke="hsl(199 89% 55% / 0.22)"
+                    strokeWidth={1}
+                    strokeDasharray="4 4"
+                  />
+                ) : (
+                  <polygon
+                    points={hull.map((point) => point.join(',')).join(' ')}
+                    fill="hsl(199 89% 55% / 0.05)"
+                    stroke="hsl(199 89% 55% / 0.22)"
+                    strokeWidth={1}
+                    strokeDasharray="4 4"
+                  />
+                )}
+                <text
+                  x={center[0]}
+                  y={center[1] - 4}
+                  textAnchor="middle"
+                  pointerEvents="none"
+                  className="select-none fill-muted-foreground/80 text-[10px]"
+                  style={{
+                    fontSize: 10,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  {site} - {count}
+                </text>
+              </g>
             )
           })}
+
+          {layout.links
+            .flatMap((link) => {
+              const source = link.source as TopoNode
+              const target = link.target as TopoNode
+              if (typeof source === 'string' || typeof target === 'string')
+                return []
+              if (
+                focusMode &&
+                (!ego || !ego.has(source.id) || !ego.has(target.id))
+              )
+                return []
+              return [{ source, target }]
+            })
+            .map(({ source, target }, index) => {
+              const color = linkStroke(source)
+              const traffic = Math.max(
+                source.device.throughputMbps,
+                target.device.throughputMbps,
+              )
+              return (
+                <g key={index}>
+                  <line
+                    x1={source.x}
+                    y1={source.y}
+                    x2={target.x}
+                    y2={target.y}
+                    stroke={color}
+                    strokeOpacity={0.28}
+                    strokeWidth={1.5}
+                  />
+                  <line
+                    x1={source.x}
+                    y1={source.y}
+                    x2={target.x}
+                    y2={target.y}
+                    stroke={color}
+                    strokeOpacity={0.8}
+                    strokeWidth={1.2}
+                    className="topo-traffic"
+                    style={{ animationDuration: `${flowDuration(traffic)}s` }}
+                  />
+                </g>
+              )
+            })}
 
           {layout.nodes.map((node) => {
             const device = node.device
@@ -174,10 +273,12 @@ export function TopologyCanvas({
             const Icon = TYPE_ICON[device.type]
             const selected = device.id === selectedId
             const color = STATUS_HEX[device.status]
+            const dimmed = focusMode && ego ? !ego.has(device.id) : false
             return (
               <g
                 key={device.id}
                 transform={`translate(${node.x},${node.y})`}
+                opacity={dimmed ? 0.15 : 1}
                 className="cursor-grab active:cursor-grabbing"
                 onPointerDown={(event) => handlePointerDown(node, event)}
                 onPointerMove={handlePointerMove}
@@ -186,7 +287,7 @@ export function TopologyCanvas({
                 onClick={() => onSelect(device)}
                 tabIndex={0}
                 role="button"
-                aria-label={`${device.name}, ${DEVICE_STATUS_LABELS[device.status]}`}
+                aria-label={`${device.name}, ${DEVICE_STATUS_LABELS[device.status]}${dimmed ? ', dimmed in focus mode' : ''}`}
                 onKeyDown={(event) => {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault()
@@ -248,6 +349,24 @@ export function TopologyCanvas({
       </svg>
 
       <div className="absolute right-3 top-3 flex flex-col gap-1">
+        {selectedId ? (
+          <Button
+            variant={focusMode ? 'default' : 'outline'}
+            size="icon"
+            aria-pressed={focusMode}
+            aria-label={
+              focusMode ? 'Exit focus mode' : 'Focus on selected device'
+            }
+            title={
+              focusMode
+                ? 'Exit focus mode'
+                : 'Focus on selected device and its neighbours'
+            }
+            onClick={() => setFocusMode((value) => !value)}
+          >
+            <Focus className="size-4" />
+          </Button>
+        ) : null}
         <Button
           variant="outline"
           size="icon"

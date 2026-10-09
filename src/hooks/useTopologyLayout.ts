@@ -15,6 +15,49 @@ import {
 import type { Device } from '@/types'
 import type { TopoLink } from '@/components/topology/topology'
 
+const SAVED_LAYOUT_KEY = 'netscope:topology'
+
+interface SavedPosition {
+  id: string
+  x: number
+  y: number
+}
+
+function loadSavedLayout(): Map<string, SavedPosition> {
+  if (typeof localStorage === 'undefined') return new Map()
+  try {
+    const raw = localStorage.getItem(SAVED_LAYOUT_KEY)
+    if (!raw) return new Map()
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return new Map()
+    const valid = parsed.filter(
+      (entry): entry is SavedPosition =>
+        typeof entry === 'object' &&
+        entry !== null &&
+        typeof (entry as SavedPosition).id === 'string' &&
+        Number.isFinite((entry as SavedPosition).x) &&
+        Number.isFinite((entry as SavedPosition).y),
+    )
+    return new Map(valid.map((entry) => [entry.id, entry]))
+  } catch {
+    return new Map()
+  }
+}
+
+function saveLayout(nodes: TopoNode[]): void {
+  if (typeof localStorage === 'undefined') return
+  try {
+    const positions: SavedPosition[] = nodes.map((node) => ({
+      id: node.id,
+      x: Math.round(node.x),
+      y: Math.round(node.y),
+    }))
+    localStorage.setItem(SAVED_LAYOUT_KEY, JSON.stringify(positions))
+  } catch {
+    /* storage unavailable - ignore */
+  }
+}
+
 export interface TopoNode extends SimulationNodeDatum {
   id: string
   device: Device
@@ -58,6 +101,7 @@ export function useTopologyLayout(
 
   useEffect(() => {
     const previous = new Map(nodesRef.current.map((node) => [node.id, node]))
+    const saved = loadSavedLayout()
     const cx = width / 2
     const cy = height / 2
     const radius = Math.min(width, height) / 3
@@ -67,6 +111,17 @@ export function useTopologyLayout(
       if (existing) {
         existing.device = device
         return existing
+      }
+      const savedPosition = saved.get(device.id)
+      if (savedPosition) {
+        return {
+          id: device.id,
+          device,
+          x: savedPosition.x,
+          y: savedPosition.y,
+          fx: savedPosition.x,
+          fy: savedPosition.y,
+        }
       }
       const angle = (index / Math.max(1, devices.length)) * Math.PI * 2
       return {
@@ -121,6 +176,7 @@ export function useTopologyLayout(
     if (!node) return
     node.fx = null
     node.fy = null
+    saveLayout(nodesRef.current)
     simRef.current?.alpha(0.25).restart()
   }, [])
 
@@ -132,6 +188,11 @@ export function useTopologyLayout(
     const cx = width / 2
     const cy = height / 2
     const radius = Math.min(width, height) / 3
+    try {
+      localStorage.removeItem(SAVED_LAYOUT_KEY)
+    } catch {
+      /* storage unavailable - ignore */
+    }
     nodesRef.current.forEach((node, index) => {
       const angle = (index / Math.max(1, nodesRef.current.length)) * Math.PI * 2
       node.fx = null

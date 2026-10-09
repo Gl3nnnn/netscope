@@ -118,4 +118,21 @@
       linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
     background-size: 28px 28px;
   }
+
+  .topo-traffic {
+    stroke-dasharray: 6 16;
+    animation: topo-flow 1.6s linear infinite;
+  }
+
+  @keyframes topo-flow {
+    to {
+      stroke-dashoffset: -22;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .topo-traffic {
+      animation: none;
+    }
+  }
 }

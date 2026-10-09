@@ -67,3 +67,22 @@ export function deriveLinks(devices: Device[]): TopoLink[] {
 
   return links
 }
+
+/**
+ * Ego (focus) mode selection: the focused node plus every immediate neighbour.
+ */
+export function focusGroup(
+  nodeIds: string[],
+  links: TopoLink[],
+  focusId: string,
+): Set<string> {
+  const group = new Set<string>([focusId])
+  for (const link of links) {
+    if (!group.has(focusId)) break
+    if (link.source === focusId || link.target === focusId) {
+      group.add(link.source)
+      group.add(link.target)
+    }
+  }
+  return new Set([...group].filter((id) => nodeIds.includes(id)))
+}
