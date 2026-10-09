@@ -3,6 +3,7 @@ import type {
   DeviceStatus,
   DeviceType,
   HealthLevel,
+  MetricSample,
   Thresholds,
 } from '@/types'
 import { computeHealthScore, healthLevel } from './health'
@@ -75,27 +76,29 @@ export interface AggregateSample {
   latencyMs: number
   packetLossPct: number
   availabilityPct: number
+  throughputMbps: number
+  cpuPct: number
+  memoryPct: number
 }
 
 /**
  * Aggregate per-device history into a single fleet-wide time series, aligned by
- * timestamp. Used by the dashboard charts.
+ * timestamp. Used by the dashboard and performance charts.
  */
 export function aggregateHistory(
   devices: Device[],
-  history: Record<
-    string,
-    {
-      t: number
-      latencyMs: number
-      packetLossPct: number
-      availabilityPct: number
-    }[]
-  >,
+  history: Record<string, MetricSample[]>,
 ): AggregateSample[] {
   const buckets = new Map<
     number,
-    { lat: number[]; loss: number[]; avail: number[] }
+    {
+      lat: number[]
+      loss: number[]
+      avail: number[]
+      thr: number[]
+      cpu: number[]
+      mem: number[]
+    }
   >()
   for (const device of devices) {
     const samples = history[device.id]
@@ -103,12 +106,15 @@ export function aggregateHistory(
     for (const sample of samples) {
       let bucket = buckets.get(sample.t)
       if (!bucket) {
-        bucket = { lat: [], loss: [], avail: [] }
+        bucket = { lat: [], loss: [], avail: [], thr: [], cpu: [], mem: [] }
         buckets.set(sample.t, bucket)
       }
       bucket.lat.push(sample.latencyMs)
       bucket.loss.push(sample.packetLossPct)
       bucket.avail.push(sample.availabilityPct)
+      bucket.thr.push(sample.throughputMbps)
+      bucket.cpu.push(sample.cpuPct)
+      bucket.mem.push(sample.memoryPct)
     }
   }
 
@@ -119,5 +125,8 @@ export function aggregateHistory(
       latencyMs: Number(average(bucket.lat).toFixed(2)),
       packetLossPct: Number(average(bucket.loss).toFixed(2)),
       availabilityPct: Number(average(bucket.avail).toFixed(3)),
+      throughputMbps: Number(average(bucket.thr).toFixed(1)),
+      cpuPct: Number(average(bucket.cpu).toFixed(1)),
+      memoryPct: Number(average(bucket.mem).toFixed(1)),
     }))
 }

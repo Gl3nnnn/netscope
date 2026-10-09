@@ -76,6 +76,12 @@ function seedHistory(
           clamp(device.availabilityPct + generator.noise(0.15), 0, 100),
           3,
         ),
+        throughputMbps: round(Math.max(1, device.throughputMbps * factor), 1),
+        cpuPct: round(clamp(device.cpuPct * factor, 0, 100), 1),
+        memoryPct: round(
+          clamp(device.memoryPct * (1 + generator.noise(0.12)), 0, 100),
+          1,
+        ),
       })
     }
     history[device.id] = samples

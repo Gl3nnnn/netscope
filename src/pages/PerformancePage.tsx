@@ -27,7 +27,7 @@ import { ChartCard } from '@/components/charts/ChartCard'
 import { ChartTooltip } from '@/components/charts/ChartTooltip'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { aggregateHistory } from '@/lib/aggregate'
-import { formatClock, round } from '@/lib/format'
+import { formatClock, formatMbps, round } from '@/lib/format'
 
 const WINDOWS = [
   { value: '30', label: 'Last 30 samples' },
@@ -53,6 +53,9 @@ export function PerformancePage() {
       latencyMs: sample.latencyMs,
       packetLossPct: sample.packetLossPct,
       availabilityPct: sample.availabilityPct,
+      throughputMbps: sample.throughputMbps,
+      cpuPct: sample.cpuPct,
+      memoryPct: sample.memoryPct,
     }))
   }, [deviceId, devices, history])
 
@@ -64,16 +67,29 @@ export function PerformancePage() {
 
   const summary = useMemo(() => {
     if (windowed.length === 0) return null
-    const avg = (key: 'latencyMs' | 'packetLossPct' | 'availabilityPct') =>
-      windowed.reduce((sum, point) => sum + point[key], 0) / windowed.length
-    const max = Math.max(...windowed.map((point) => point.latencyMs))
+    const avg = (
+      key:
+        | 'latencyMs'
+        | 'packetLossPct'
+        | 'availabilityPct'
+        | 'throughputMbps'
+        | 'cpuPct'
+        | 'memoryPct',
+    ) => windowed.reduce((sum, point) => sum + point[key], 0) / windowed.length
+    const max = (key: 'latencyMs' | 'cpuPct' | 'throughputMbps') =>
+      Math.max(...windowed.map((point) => point[key]))
     const minAvail = Math.min(...windowed.map((point) => point.availabilityPct))
     return {
       latency: avg('latencyMs'),
       loss: avg('packetLossPct'),
       availability: avg('availabilityPct'),
-      maxLatency: max,
+      maxLatency: max('latencyMs'),
       minAvailability: minAvail,
+      cpu: avg('cpuPct'),
+      maxCpu: max('cpuPct'),
+      memory: avg('memoryPct'),
+      throughput: avg('throughputMbps'),
+      peakThroughput: max('throughputMbps'),
     }
   }, [windowed])
 
@@ -170,6 +186,22 @@ export function PerformancePage() {
               <Summary
                 label="Min availability"
                 value={`${round(summary.minAvailability, 3)}%`}
+              />
+              <Summary
+                label="Avg CPU"
+                value={`${round(summary.cpu, 1)}%`}
+              />
+              <Summary
+                label="Peak CPU"
+                value={`${round(summary.maxCpu, 1)}%`}
+              />
+              <Summary
+                label="Avg memory"
+                value={`${round(summary.memory, 1)}%`}
+              />
+              <Summary
+                label="Avg throughput"
+                value={formatMbps(summary.throughput)}
               />
             </div>
           ) : null}
@@ -333,6 +365,179 @@ export function PerformancePage() {
                     stroke="#34d399"
                     strokeWidth={2}
                     fill="url(#availFill)"
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <ChartCard
+              title="CPU utilisation"
+              description="Simulated processor pressure"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={windowed}
+                  margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={GRID}
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="t"
+                    tickFormatter={(value) => formatClock(Number(value))}
+                    tick={{ fontSize: 11, fill: AXIS }}
+                    minTickGap={40}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    tick={{ fontSize: 11, fill: AXIS }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={44}
+                  />
+                  <Tooltip
+                    content={
+                      <ChartTooltip
+                        labelFormatter={(value) => formatClock(Number(value))}
+                        valueFormatter={(value) =>
+                          `${round(Number(value), 1)}%`
+                        }
+                      />
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="cpuPct"
+                    name="CPU"
+                    stroke="#f472b6"
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard
+              title="Memory utilisation"
+              description="Simulated memory pressure"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={windowed}
+                  margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={GRID}
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="t"
+                    tickFormatter={(value) => formatClock(Number(value))}
+                    tick={{ fontSize: 11, fill: AXIS }}
+                    minTickGap={40}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    tick={{ fontSize: 11, fill: AXIS }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={44}
+                  />
+                  <Tooltip
+                    content={
+                      <ChartTooltip
+                        labelFormatter={(value) => formatClock(Number(value))}
+                        valueFormatter={(value) =>
+                          `${round(Number(value), 1)}%`
+                        }
+                      />
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="memoryPct"
+                    name="Memory"
+                    stroke="#a78bfa"
+                    strokeWidth={2}
+                    dot={false}
+                    isAnimationActive={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard
+              title="Throughput"
+              description="Simulated aggregate traffic"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={windowed}
+                  margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient
+                      id="throughputFill"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor="#2dd4bf" stopOpacity={0.5} />
+                      <stop
+                        offset="100%"
+                        stopColor="#2dd4bf"
+                        stopOpacity={0.05}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={GRID}
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="t"
+                    tickFormatter={(value) => formatClock(Number(value))}
+                    tick={{ fontSize: 11, fill: AXIS }}
+                    minTickGap={40}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: AXIS }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={44}
+                  />
+                  <Tooltip
+                    content={
+                      <ChartTooltip
+                        labelFormatter={(value) => formatClock(Number(value))}
+                        valueFormatter={(value) =>
+                          formatMbps(Number(value))
+                        }
+                      />
+                    }
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="throughputMbps"
+                    name="Throughput"
+                    stroke="#2dd4bf"
+                    strokeWidth={2}
+                    fill="url(#throughputFill)"
                     isAnimationActive={false}
                   />
                 </AreaChart>

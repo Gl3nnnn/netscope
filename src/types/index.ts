@@ -71,6 +71,9 @@ export interface MetricSample {
   latencyMs: number
   packetLossPct: number
   availabilityPct: number
+  throughputMbps: number
+  cpuPct: number
+  memoryPct: number
 }
 
 export interface Incident {

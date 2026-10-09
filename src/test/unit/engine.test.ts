@@ -27,8 +27,24 @@ describe('runTick', () => {
     }
   })
 
-  it('is deterministic for the same seed and inputs', () => {
+  it('records throughput, CPU and memory in each sample', () => {
     const devices = buildSeedDevices(mulberry32(7), NOW)
+    const result = runTick({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      steps: 1,
+      incidentFrequency: 0,
+      now: NOW,
+      rng: mulberry32(99),
+    })
+    const sample = result.samples[devices[0].id]
+    expect(typeof sample.throughputMbps).toBe('number')
+    expect(typeof sample.cpuPct).toBe('number')
+    expect(typeof sample.memoryPct).toBe('number')
+  })
+
+  it('is deterministic for the same seed and inputs', () => {    const devices = buildSeedDevices(mulberry32(7), NOW)
     const run = () =>
       runTick({
         devices,

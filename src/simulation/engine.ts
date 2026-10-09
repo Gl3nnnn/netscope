@@ -86,6 +86,9 @@ export function runTick(input: TickInput): TickResult {
       latencyMs: device.latencyMs,
       packetLossPct: device.packetLossPct,
       availabilityPct: device.availabilityPct,
+      throughputMbps: device.throughputMbps,
+      cpuPct: device.cpuPct,
+      memoryPct: device.memoryPct,
     }
   }
 
