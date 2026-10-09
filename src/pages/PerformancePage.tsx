@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Activity } from 'lucide-react'
+import { Activity, AlertTriangle, Gauge } from 'lucide-react'
 import {
   Area,
   AreaChart,
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceDot,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -14,7 +15,8 @@ import {
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -27,7 +29,17 @@ import { ChartCard } from '@/components/charts/ChartCard'
 import { ChartTooltip } from '@/components/charts/ChartTooltip'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { aggregateHistory } from '@/lib/aggregate'
+import { flagAnomalies, type FlaggedPoint } from '@/lib/anomaly'
+import {
+  SATURATION_THRESHOLD_PCT,
+  avgUtilization,
+  fleetUtilization,
+  maxUtilization,
+  utilizationPct,
+} from '@/lib/capacity'
 import { formatClock, formatMbps, round } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import type { Device } from '@/types'
 
 const WINDOWS = [
   { value: '30', label: 'Last 30 samples' },
@@ -36,8 +48,28 @@ const WINDOWS = [
   { value: 'all', label: 'All retained samples' },
 ] as const
 
+const ANOMALY_KEYS = [
+  'latencyMs',
+  'packetLossPct',
+  'cpuPct',
+  'memoryPct',
+  'throughputMbps',
+] as const
+type AnomalyKey = (typeof ANOMALY_KEYS)[number]
+
 const GRID = 'hsl(217 33% 19%)'
 const AXIS = 'hsl(215 20% 65%)'
+const ANOMALY_COLOR = '#f87171'
+
+type SeriesPoint = {
+  t: number
+  latencyMs: number
+  packetLossPct: number
+  availabilityPct: number
+  throughputMbps: number
+  cpuPct: number
+  memoryPct: number
+}
 
 export function PerformancePage() {
   const devices = useNetworkStore((state) => state.devices)
@@ -45,7 +77,7 @@ export function PerformancePage() {
   const [deviceId, setDeviceId] = useState<string>('fleet')
   const [window, setWindow] = useState<string>('60')
 
-  const series = useMemo(() => {
+  const series = useMemo<SeriesPoint[]>(() => {
     if (deviceId === 'fleet') return aggregateHistory(devices, history)
     const samples = history[deviceId] ?? []
     return samples.map((sample) => ({
@@ -59,11 +91,74 @@ export function PerformancePage() {
     }))
   }, [deviceId, devices, history])
 
-  const windowed = useMemo(() => {
+  const windowed = useMemo<SeriesPoint[]>(() => {
     if (window === 'all') return series
     const count = Number(window)
     return series.slice(Math.max(0, series.length - count))
   }, [series, window])
+
+  const flagged = useMemo(() => {
+    const map: Record<AnomalyKey, FlaggedPoint[]> = {
+      latencyMs: [],
+      packetLossPct: [],
+      cpuPct: [],
+      memoryPct: [],
+      throughputMbps: [],
+    }
+    for (const key of ANOMALY_KEYS) {
+      map[key] = flagAnomalies(
+        windowed.map((point) => ({ t: point.t, value: point[key] })),
+        { windowSize: 12, threshold: 3 },
+      )
+    }
+    return map
+  }, [windowed])
+
+  const recentAnomalies = useMemo(() => {
+    if (windowed.length === 0) return 0
+    const cutoff =
+      windowed.length > 12 ? windowed[windowed.length - 12].t : windowed[0].t
+    return ANOMALY_KEYS.reduce(
+      (total, key) =>
+        total + flagged[key].filter((point) => point.t >= cutoff).length,
+      0,
+    )
+  }, [flagged, windowed])
+
+  const capacity = useMemo(() => {
+    const bySite = new Map<string, Device[]>()
+    for (const device of devices) {
+      const list = bySite.get(device.site) ?? []
+      list.push(device)
+      bySite.set(device.site, list)
+    }
+    const rows = [...bySite.entries()]
+      .map(([site, siteDevices]) => ({
+        site,
+        avg: avgUtilization(siteDevices),
+        max: maxUtilization(siteDevices),
+        count: siteDevices.length,
+      }))
+      .sort((a, b) => b.max - a.max)
+    const totalCapacity = devices.reduce(
+      (sum, device) => sum + device.capacityMbps,
+      0,
+    )
+    const totalThroughput = devices.reduce(
+      (sum, device) => sum + device.throughputMbps,
+      0,
+    )
+    return {
+      rows,
+      fleet: fleetUtilization(devices),
+      headroomMbps: totalCapacity - totalThroughput,
+      atRisk: devices.filter(
+        (device) =>
+          utilizationPct(device.throughputMbps, device.capacityMbps) >=
+          SATURATION_THRESHOLD_PCT,
+      ),
+    }
+  }, [devices])
 
   const summary = useMemo(() => {
     if (windowed.length === 0) return null
@@ -153,6 +248,12 @@ export function PerformancePage() {
               </SelectContent>
             </Select>
           </div>
+          {recentAnomalies > 0 ? (
+            <Badge variant="warning" className="shrink-0">
+              <AlertTriangle className="size-3" />
+              {recentAnomalies} anomalies in the last 12 samples
+            </Badge>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -250,6 +351,16 @@ export function PerformancePage() {
                   dot={false}
                   isAnimationActive={false}
                 />
+                {flagged.latencyMs.map((point) => (
+                  <ReferenceDot
+                    key={point.t}
+                    x={point.t}
+                    y={point.value}
+                    r={4}
+                    fill={ANOMALY_COLOR}
+                    stroke="none"
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -302,6 +413,16 @@ export function PerformancePage() {
                     dot={false}
                     isAnimationActive={false}
                   />
+                  {flagged.packetLossPct.map((point) => (
+                    <ReferenceDot
+                      key={point.t}
+                      x={point.t}
+                      y={point.value}
+                      r={4}
+                      fill={ANOMALY_COLOR}
+                      stroke="none"
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -418,6 +539,16 @@ export function PerformancePage() {
                     dot={false}
                     isAnimationActive={false}
                   />
+                  {flagged.cpuPct.map((point) => (
+                    <ReferenceDot
+                      key={point.t}
+                      x={point.t}
+                      y={point.value}
+                      r={4}
+                      fill={ANOMALY_COLOR}
+                      stroke="none"
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -470,6 +601,16 @@ export function PerformancePage() {
                     dot={false}
                     isAnimationActive={false}
                   />
+                  {flagged.memoryPct.map((point) => (
+                    <ReferenceDot
+                      key={point.t}
+                      x={point.t}
+                      y={point.value}
+                      r={4}
+                      fill={ANOMALY_COLOR}
+                      stroke="none"
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -535,12 +676,110 @@ export function PerformancePage() {
                     fill="url(#throughputFill)"
                     isAnimationActive={false}
                   />
+                  {flagged.throughputMbps.map((point) => (
+                    <ReferenceDot
+                      key={point.t}
+                      x={point.t}
+                      y={point.value}
+                      r={4}
+                      fill={ANOMALY_COLOR}
+                      stroke="none"
+                    />
+                  ))}
                 </AreaChart>
               </ResponsiveContainer>
             </ChartCard>
           </div>
         </>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Gauge className="size-4" /> Capacity &amp; headroom
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <CapacityStat
+              label="Fleet utilisation"
+              value={`${round(capacity.fleet, 1)}%`}
+            />
+            <CapacityStat
+              label="Unused headroom"
+              value={formatMbps(capacity.headroomMbps)}
+            />
+            <CapacityStat
+              label="Saturated devices"
+              value={`${capacity.atRisk.length}`}
+              accent={
+                capacity.atRisk.length > 0 ? 'text-destructive' : 'text-success'
+              }
+            />
+            <CapacityStat
+              label="Sites covered"
+              value={`${capacity.rows.length}`}
+            />
+          </div>
+          <div className="space-y-2">
+            {capacity.rows.map((row) => {
+              const color =
+                row.max >= SATURATION_THRESHOLD_PCT
+                  ? '#ef4444'
+                  : row.max >= 50
+                    ? '#fbbf24'
+                    : '#38bdf8'
+              return (
+                <div key={row.site} className="flex items-center gap-3">
+                  <span className="w-40 truncate text-xs text-muted-foreground">
+                    {row.site}
+                  </span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${row.avg}%`, backgroundColor: color }}
+                    />
+                  </div>
+                  <span className="flex w-28 shrink-0 justify-end font-mono text-[11px] tabular-nums text-muted-foreground">
+                    {round(row.avg, 0)}% avg / {round(row.max, 0)}% max
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Saturation risk (at or above {SATURATION_THRESHOLD_PCT}% util)
+            </p>
+            {capacity.atRisk.length === 0 ? (
+              <p className="mt-1 text-sm text-muted-foreground">
+                No devices are currently at saturation risk.
+              </p>
+            ) : (
+              <ul className="mt-2 space-y-1">
+                {capacity.atRisk.map((device) => (
+                  <li
+                    key={device.id}
+                    className="flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="truncate">{device.name}</span>
+                    <span className="font-mono text-xs text-destructive">
+                      {round(
+                        utilizationPct(
+                          device.throughputMbps,
+                          device.capacityMbps,
+                        ),
+                        1,
+                      )}
+                      %
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
@@ -553,6 +792,29 @@ function Summary({ label, value }: { label: string; value: string }) {
           {label}
         </p>
         <p className="mt-1 text-xl font-semibold tabular-nums">{value}</p>
+      </CardContent>
+    </Card>
+  )
+}
+
+function CapacityStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string
+  value: string
+  accent?: string
+}) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <p className={cn('mt-1 text-xl font-semibold tabular-nums', accent)}>
+          {value}
+        </p>
       </CardContent>
     </Card>
   )
