@@ -82,6 +82,14 @@ export const useSettingsStore = create<SettingsState>()(
       version: STORAGE_VERSION,
       storage: createDebouncedStorage<Settings>(1000),
       partialize: (state) => toPersisted(state),
+      migrate: (persisted) => {
+        const p = (persisted ?? {}) as Partial<Settings>
+        return {
+          ...DEFAULT_SETTINGS,
+          ...p,
+          thresholds: { ...DEFAULT_THRESHOLDS, ...(p.thresholds ?? {}) },
+        }
+      },
     },
   ),
 )

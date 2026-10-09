@@ -49,6 +49,10 @@ export interface Device {
   uptimeSec: number
   /** Epoch ms of the last simulated contact with the device. */
   lastSeen: number
+  /** True while the DEMO engine detects rapid state oscillation (flapping). */
+  flapping?: boolean
+  /** True while the device is inside a simulated maintenance window. */
+  inMaintenance?: boolean
 }
 
 /** Fields a user supplies when creating/editing a device. */
@@ -123,3 +127,16 @@ export interface PersistedState {
   events: TimelineEvent[]
   settings: Settings
 }
+
+/** Shape of a full-state backup file (devices + activity + settings). */
+export interface BackupFile {
+  version: number
+  exportedAt: string
+  devices: Device[]
+  incidents: Incident[]
+  events: TimelineEvent[]
+  settings: Settings
+}
+
+/** Backup payload without the file-level metadata, used when restoring. */
+export type BackupPayload = Omit<BackupFile, 'version' | 'exportedAt'>

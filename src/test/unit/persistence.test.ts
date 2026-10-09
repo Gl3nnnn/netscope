@@ -1,12 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
+  coerceDevices,
   exportDevicesJson,
+  exportFullState,
   isValidDeviceType,
   isValidIp,
   isValidMac,
   isValidPersistedState,
+  migratePersistedNetwork,
   parseDeviceImport,
+  parseFullState,
+  STORAGE_VERSION,
 } from '../../storage/persistence'
+import { DEFAULT_SETTINGS } from '../../store/useSettingsStore'
 import { buildSeedDevices } from '../../simulation/seed'
 import { mulberry32 } from '../../simulation/random'
 
@@ -125,5 +131,88 @@ describe('isValidPersistedState', () => {
   it('rejects malformed state', () => {
     expect(isValidPersistedState(null)).toBe(false)
     expect(isValidPersistedState({ version: 1, devices: 'nope' })).toBe(false)
+  })
+})
+
+describe('migratePersistedNetwork', () => {
+  it('coerces devices and fills missing optional flags', () => {
+    const devices = buildSeedDevices(mulberry32(1), Date.now())
+    const migrated = migratePersistedNetwork(
+      { devices, incidents: [], events: [] },
+      1,
+    )
+    expect(migrated.devices).toHaveLength(devices.length)
+    expect(migrated.devices[0].flapping).toBe(false)
+    expect(migrated.devices[0].inMaintenance).toBe(false)
+  })
+
+  it('drops invalid device records without throwing', () => {
+    const migrated = migratePersistedNetwork(
+      {
+        devices: [
+          { name: 'ok', type: 'router', ip: '10.0.0.1' },
+          { nope: true },
+        ],
+        incidents: [],
+        events: [],
+      },
+      1,
+    )
+    expect(migrated.devices).toHaveLength(1)
+  })
+
+  it('tolerates totally malformed input', () => {
+    expect(migratePersistedNetwork(null, 1)).toEqual({
+      devices: [],
+      incidents: [],
+      events: [],
+    })
+  })
+})
+
+describe('coerceDevices', () => {
+  it('returns an empty array for non-arrays', () => {
+    expect(coerceDevices('nope')).toEqual([])
+    expect(coerceDevices(undefined)).toEqual([])
+  })
+})
+
+describe('full-state backup', () => {
+  it('round-trips a backup file', () => {
+    const devices = buildSeedDevices(mulberry32(2), Date.now())
+    const json = exportFullState({
+      devices,
+      incidents: [],
+      events: [],
+      settings: DEFAULT_SETTINGS,
+    })
+    const result = parseFullState(json)
+    expect(result.ok).toBe(true)
+    expect(result.data?.devices).toHaveLength(devices.length)
+    expect(result.data?.settings).toBeDefined()
+  })
+
+  it('stamps the current storage version', () => {
+    const json = exportFullState({
+      devices: [],
+      incidents: [],
+      events: [],
+      settings: DEFAULT_SETTINGS,
+    })
+    expect((JSON.parse(json) as { version: number }).version).toBe(
+      STORAGE_VERSION,
+    )
+  })
+
+  it('rejects a backup without a settings object', () => {
+    const json = JSON.stringify({ devices: [], incidents: [], events: [] })
+    const result = parseFullState(json)
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/settings/i)
+  })
+
+  it('rejects non-JSON and empty input', () => {
+    expect(parseFullState('   ').ok).toBe(false)
+    expect(parseFullState('{ not json').ok).toBe(false)
   })
 })

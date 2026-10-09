@@ -12,7 +12,7 @@ import { round, clamp } from '@/lib/format'
 import { mulberry32, type Rng } from '@/simulation/random'
 import { buildSeedDevices, deviceFromInput } from '@/simulation/seed'
 import { runTick } from '@/simulation/engine'
-import { exportDevicesJson, STORAGE_VERSION } from '@/storage/persistence'
+import { exportDevicesJson, STORAGE_VERSION, migratePersistedNetwork, type PersistedNetwork } from '@/storage/persistence'
 import { createDebouncedStorage } from '@/storage/debouncedStorage'
 import { useSettingsStore } from './useSettingsStore'
 
@@ -21,12 +21,6 @@ const MAX_EVENTS = 500
 const MAX_INCIDENTS = 200
 
 let rng: Rng = mulberry32(BASE_SEED)
-
-interface PersistedNetwork {
-  devices: Device[]
-  incidents: Incident[]
-  events: TimelineEvent[]
-}
 
 export interface NetworkState {
   devices: Device[]
@@ -387,7 +381,8 @@ export const useNetworkStore = create<NetworkState>()(
       version: STORAGE_VERSION,
       storage: createDebouncedStorage<PersistedNetwork>(1500),
       partialize: (state) => toPersisted(state),
-      migrate: (persisted) => persisted as PersistedNetwork,
+      migrate: (persisted, version) =>
+        migratePersistedNetwork(persisted, version),
     },
   ),
 )

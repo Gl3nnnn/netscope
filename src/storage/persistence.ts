@@ -1,8 +1,16 @@
-import type { Device, DeviceType, PersistedState } from '@/types'
+import type {
+  BackupFile,
+  BackupPayload,
+  Device,
+  DeviceType,
+  Incident,
+  PersistedState,
+  TimelineEvent,
+} from '@/types'
 import { clamp, round } from '@/lib/format'
 
 export const STORAGE_KEY = 'netscope'
-export const STORAGE_VERSION = 1
+export const STORAGE_VERSION = 2
 
 const DEVICE_TYPES: readonly DeviceType[] = [
   'router',
@@ -106,6 +114,8 @@ function normalizeDevice(raw: unknown, index: number): Device {
     memoryPct: round(num(r.memoryPct, 45, 0, 100), 1),
     uptimeSec: num(r.uptimeSec, 3600, 0, Number.MAX_SAFE_INTEGER),
     lastSeen: num(r.lastSeen, now, 0, Number.MAX_SAFE_INTEGER),
+    flapping: r.flapping === true,
+    inMaintenance: r.inMaintenance === true,
   }
 }
 
@@ -177,4 +187,120 @@ export function isValidPersistedState(value: unknown): value is PersistedState {
     typeof v.settings === 'object' &&
     v.settings !== null
   )
+}
+
+/** The slice of network state that is written to localStorage. */
+export interface PersistedNetwork {
+  devices: Device[]
+  incidents: Incident[]
+  events: TimelineEvent[]
+}
+
+/**
+ * Best-effort coercion of an unknown value into a valid device array. Invalid
+ * entries are dropped rather than throwing, so a single corrupt record cannot
+ * wipe an otherwise-recoverable persisted state during migration.
+ */
+export function coerceDevices(raw: unknown): Device[] {
+  if (!Array.isArray(raw)) return []
+  const devices: Device[] = []
+  raw.forEach((item, index) => {
+    try {
+      devices.push(normalizeDevice(item, index))
+    } catch {
+      // Skip unrecoverable records.
+    }
+  })
+  return devices
+}
+
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
+}
+
+/**
+ * Normalise persisted network state across storage versions. Version 1 -> 2
+ * only added optional `Device` flags, so the migration is defensive coercion
+ * of every collection.
+ */
+export function migratePersistedNetwork(
+  persisted: unknown,
+  _fromVersion: number,
+): PersistedNetwork {
+  if (!persisted || typeof persisted !== 'object') {
+    return { devices: [], incidents: [], events: [] }
+  }
+  const p = persisted as Record<string, unknown>
+  return {
+    devices: coerceDevices(p.devices),
+    incidents: asArray<Incident>(p.incidents),
+    events: asArray<TimelineEvent>(p.events),
+  }
+}
+
+export function exportFullState(payload: BackupPayload): string {
+  const file: BackupFile = {
+    version: STORAGE_VERSION,
+    exportedAt: new Date().toISOString(),
+    ...payload,
+  }
+  return JSON.stringify(file, null, 2)
+}
+
+export interface FullStateImportResult {
+  ok: boolean
+  data?: BackupPayload
+  error?: string
+}
+
+/**
+ * Parse and validate a full-state backup WITHOUT touching application state.
+ * Only the collections that are present and well-formed are accepted; a
+ * malformed file is rejected so the caller can surface a friendly error.
+ */
+export function parseFullState(text: string): FullStateImportResult {
+  const trimmed = text.trim()
+  if (!trimmed) return { ok: false, error: 'The backup file is empty.' }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return { ok: false, error: 'The backup file is not valid JSON.' }
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    return { ok: false, error: 'The backup file has an unexpected shape.' }
+  }
+
+  const p = parsed as Record<string, unknown>
+  if (!Array.isArray(p.devices)) {
+    return {
+      ok: false,
+      error: 'The backup is missing a "devices" array.',
+    }
+  }
+
+  const settings = p.settings
+  if (!settings || typeof settings !== 'object') {
+    return { ok: false, error: 'The backup is missing a "settings" object.' }
+  }
+
+  const devices = coerceDevices(p.devices)
+  if (p.devices.length > 0 && devices.length === 0) {
+    return {
+      ok: false,
+      error: 'None of the devices in the backup could be validated.',
+    }
+  }
+
+  return {
+    ok: true,
+    data: {
+      devices,
+      incidents: asArray<Incident>(p.incidents),
+      events: asArray<TimelineEvent>(p.events),
+      settings: settings as BackupPayload['settings'],
+    },
+  }
 }
