@@ -6,6 +6,7 @@ import {
   Settings,
   Share2,
   ShieldAlert,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -40,6 +41,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Performance',
     icon: Activity,
     description: 'Historical metrics',
+  },
+  {
+    to: '/sla',
+    label: 'SLA & Uptime',
+    icon: ShieldCheck,
+    description: 'Service-level reporting',
   },
   {
     to: '/incidents',

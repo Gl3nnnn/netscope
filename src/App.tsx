@@ -23,6 +23,9 @@ const PerformancePage = lazy(() =>
     default: m.PerformancePage,
   })),
 )
+const SlaPage = lazy(() =>
+  import('@/pages/SlaPage').then((m) => ({ default: m.SlaPage })),
+)
 const IncidentsPage = lazy(() =>
   import('@/pages/IncidentsPage').then((m) => ({ default: m.IncidentsPage })),
 )
@@ -75,6 +78,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <PerformancePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="sla"
+            element={
+              <ErrorBoundary>
+                <SlaPage />
               </ErrorBoundary>
             }
           />
