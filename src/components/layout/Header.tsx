@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Menu, Moon, PanelLeft, Pause, Play, Sun } from 'lucide-react'
+import { Menu, Moon, PanelLeft, Pause, Play, Search, Sun } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -14,9 +14,14 @@ import { formatClock } from '@/lib/format'
 interface HeaderProps {
   onToggleSidebar: () => void
   onOpenMobileNav: () => void
+  onOpenPalette?: () => void
 }
 
-export function Header({ onToggleSidebar, onOpenMobileNav }: HeaderProps) {
+export function Header({
+  onToggleSidebar,
+  onOpenMobileNav,
+  onOpenPalette,
+}: HeaderProps) {
   const theme = useSettingsStore((state) => state.theme)
   const toggleTheme = useSettingsStore((state) => state.toggleTheme)
   const simulationRunning = useSettingsStore((state) => state.simulationRunning)
@@ -58,6 +63,22 @@ export function Header({ onToggleSidebar, onOpenMobileNav }: HeaderProps) {
       </div>
 
       <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        {onOpenPalette ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenPalette}
+            className="hidden gap-2 text-muted-foreground sm:inline-flex"
+            aria-label="Open command palette"
+          >
+            <Search className="size-4" />
+            <span className="hidden lg:inline">Search</span>
+            <kbd className="hidden rounded border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] lg:inline">
+              Ctrl K
+            </kbd>
+          </Button>
+        ) : null}
+
         <span
           className="hidden font-mono text-xs text-muted-foreground sm:block"
           aria-label="Current time"

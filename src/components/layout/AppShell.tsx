@@ -1,7 +1,9 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useCallback, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { PageLoader } from '@/components/common/PageLoader'
+import { CommandPalette } from '@/components/common/CommandPalette'
+import { ShortcutsDialog } from '@/components/common/ShortcutsDialog'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +14,7 @@ import { SidebarNav } from './SidebarNav'
 import { Header } from './Header'
 import { useSimulation } from '@/hooks/useSimulation'
 import { useTheme } from '@/hooks/useTheme'
+import { useHotkeys } from '@/hooks/useHotkeys'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { cn } from '@/lib/utils'
 
@@ -22,6 +25,16 @@ export function AppShell() {
   const collapsed = useSettingsStore((state) => state.sidebarCollapsed)
   const toggleSidebar = useSettingsStore((state) => state.toggleSidebar)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
+
+  const openPalette = useCallback(() => setPaletteOpen(true), [])
+  const openHelp = useCallback(() => setHelpOpen(true), [])
+  const showHelp = useCallback(() => {
+    setPaletteOpen(false)
+    setHelpOpen(true)
+  }, [])
+  useHotkeys({ onOpenPalette: openPalette, onOpenHelp: openHelp })
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -46,6 +59,7 @@ export function AppShell() {
           <Header
             onToggleSidebar={toggleSidebar}
             onOpenMobileNav={() => setMobileOpen(true)}
+            onOpenPalette={openPalette}
           />
           <main id="main-content" className="flex-1 px-3 py-4 sm:px-5 sm:py-6">
             <div className="mx-auto w-full max-w-7xl animate-fade-in">
@@ -69,6 +83,13 @@ export function AppShell() {
           <SidebarNav onNavigate={() => setMobileOpen(false)} />
         </DialogContent>
       </Dialog>
+
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onShowHelp={showHelp}
+      />
+      <ShortcutsDialog open={helpOpen} onOpenChange={setHelpOpen} />
     </TooltipProvider>
   )
 }
