@@ -1,0 +1,180 @@
+import type { Device, DeviceType, PersistedState } from '@/types'
+import { clamp, round } from '@/lib/format'
+
+export const STORAGE_KEY = 'netscope'
+export const STORAGE_VERSION = 1
+
+const DEVICE_TYPES: readonly DeviceType[] = [
+  'router',
+  'switch',
+  'firewall',
+  'server',
+  'accessPoint',
+]
+
+const IPV4 = /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/
+const MAC = /^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/
+
+export function isValidIp(ip: string): boolean {
+  return IPV4.test(ip.trim())
+}
+
+export function isValidMac(mac: string): boolean {
+  return MAC.test(mac.trim())
+}
+
+export function isValidDeviceType(value: unknown): value is DeviceType {
+  return (
+    typeof value === 'string' &&
+    (DEVICE_TYPES as readonly string[]).includes(value)
+  )
+}
+
+export interface ImportResult {
+  ok: boolean
+  devices?: Device[]
+  error?: string
+}
+
+function num(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? clamp(value, min, max)
+    : fallback
+}
+
+/**
+ * Validate and normalise a single raw imported device. Throws a descriptive
+ * error when a required field is missing or malformed.
+ */
+function normalizeDevice(raw: unknown, index: number): Device {
+  if (typeof raw !== 'object' || raw === null) {
+    throw new Error(`Device #${index + 1} is not an object.`)
+  }
+  const r = raw as Record<string, unknown>
+
+  const name = typeof r.name === 'string' ? r.name.trim() : ''
+  if (!name) throw new Error(`Device #${index + 1} is missing a "name".`)
+
+  if (!isValidDeviceType(r.type)) {
+    throw new Error(
+      `Device #${index + 1} ("${name}") has an invalid "type". Expected one of: ${DEVICE_TYPES.join(', ')}.`,
+    )
+  }
+
+  const ip = typeof r.ip === 'string' ? r.ip.trim() : ''
+  if (!isValidIp(ip)) {
+    throw new Error(
+      `Device #${index + 1} ("${name}") has an invalid IPv4 "ip".`,
+    )
+  }
+
+  const mac = typeof r.mac === 'string' ? r.mac.trim() : ''
+  if (mac && !isValidMac(mac)) {
+    throw new Error(`Device #${index + 1} ("${name}") has an invalid "mac".`)
+  }
+
+  const tags = Array.isArray(r.tags)
+    ? r.tags.filter((t): t is string => typeof t === 'string')
+    : [r.type]
+
+  const now = Date.now()
+  const availability = num(r.availabilityPct, 99.9, 0, 100)
+
+  return {
+    id: typeof r.id === 'string' && r.id ? r.id : `dev_import_${now}_${index}`,
+    name,
+    type: r.type,
+    site:
+      typeof r.site === 'string' && r.site.trim() ? r.site.trim() : 'Imported',
+    ip,
+    mac,
+    status:
+      r.status === 'online' || r.status === 'degraded' || r.status === 'offline'
+        ? r.status
+        : 'online',
+    tags,
+    latencyMs: round(num(r.latencyMs, 8, 0, 5000), 2),
+    packetLossPct: round(num(r.packetLossPct, 0.1, 0, 100), 2),
+    availabilityPct: round(availability, 3),
+    throughputMbps: round(num(r.throughputMbps, 500, 0, 100000), 1),
+    cpuPct: round(num(r.cpuPct, 40, 0, 100), 1),
+    memoryPct: round(num(r.memoryPct, 45, 0, 100), 1),
+    uptimeSec: num(r.uptimeSec, 3600, 0, Number.MAX_SAFE_INTEGER),
+    lastSeen: num(r.lastSeen, now, 0, Number.MAX_SAFE_INTEGER),
+  }
+}
+
+/**
+ * Parse and validate a JSON import WITHOUT touching application state. Returns
+ * a discriminated result so the caller can surface a friendly error.
+ */
+export function parseDeviceImport(text: string): ImportResult {
+  const trimmed = text.trim()
+  if (!trimmed) return { ok: false, error: 'The imported file is empty.' }
+
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(trimmed)
+  } catch {
+    return { ok: false, error: 'The file is not valid JSON.' }
+  }
+
+  let list: unknown
+  if (Array.isArray(parsed)) {
+    list = parsed
+  } else if (
+    parsed &&
+    typeof parsed === 'object' &&
+    Array.isArray((parsed as { devices?: unknown }).devices)
+  ) {
+    list = (parsed as { devices: unknown[] }).devices
+  } else {
+    return {
+      ok: false,
+      error:
+        'Expected a JSON array of devices or an object with a "devices" array.',
+    }
+  }
+
+  const arr = list as unknown[]
+  if (arr.length === 0)
+    return { ok: false, error: 'No devices found to import.' }
+
+  try {
+    const devices = arr.map((raw, index) => normalizeDevice(raw, index))
+    return { ok: true, devices }
+  } catch (error) {
+    return {
+      ok: false,
+      error:
+        error instanceof Error ? error.message : 'Import validation failed.',
+    }
+  }
+}
+
+export function exportDevicesJson(devices: Device[]): string {
+  return JSON.stringify(
+    { version: STORAGE_VERSION, exportedAt: new Date().toISOString(), devices },
+    null,
+    2,
+  )
+}
+
+/** Basic shape validation for state loaded back from localStorage. */
+export function isValidPersistedState(value: unknown): value is PersistedState {
+  if (!value || typeof value !== 'object') return false
+  const v = value as Partial<PersistedState>
+  return (
+    typeof v.version === 'number' &&
+    Array.isArray(v.devices) &&
+    Array.isArray(v.incidents) &&
+    Array.isArray(v.events) &&
+    typeof v.settings === 'object' &&
+    v.settings !== null
+  )
+}
