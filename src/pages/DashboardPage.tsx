@@ -7,6 +7,7 @@ import {
   Gauge,
   Server,
   Signal,
+  Timer,
   Wifi,
 } from 'lucide-react'
 import {
@@ -51,6 +52,7 @@ import {
   formatRelativeTime,
   round,
 } from '@/lib/format'
+import { percentile } from '@/lib/percentile'
 import type { Severity } from '@/types'
 
 const SEVERITY_ORDER: Record<Severity, number> = {
@@ -89,6 +91,10 @@ export function DashboardPage() {
       latency: averageLatency(devices),
       loss: averagePacketLoss(devices),
       availability: averageAvailability(devices),
+      p95: percentile(
+        devices.map((device) => device.latencyMs),
+        95,
+      ),
       health: overallHealth(devices, thresholds),
       healthDist: healthDistribution(devices, thresholds),
     }
@@ -182,7 +188,7 @@ export function DashboardPage() {
         description="Fleet health, simulated metrics and recent activity. DEMO data only."
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-7">
         <StatCard
           label="Devices"
           value={String(devices.length)}
@@ -201,6 +207,12 @@ export function DashboardPage() {
           value={`${round(stats.latency, 1)} ms`}
           icon={Activity}
           hint={`Threshold ${thresholds.latencyMs} ms`}
+        />
+        <StatCard
+          label="P95 Latency"
+          value={`${round(stats.p95 ?? 0, 1)} ms`}
+          icon={Timer}
+          hint={`of ${devices.length} devices`}
         />
         <StatCard
           label="Packet Loss"

@@ -9,6 +9,7 @@ import {
   MemoryStick,
   Server,
   Signal,
+  Timer,
   Wifi,
   Wrench,
 } from 'lucide-react'
@@ -43,6 +44,7 @@ import {
   DEVICE_TYPE_LABELS,
 } from '@/lib/health'
 import { utilizationPct } from '@/lib/capacity'
+import { percentile } from '@/lib/percentile'
 import {
   formatClock,
   formatDateTime,
@@ -88,6 +90,17 @@ export function DeviceDetailPage() {
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, 12),
     [events, id],
+  )
+
+  const p95Latency = useMemo(
+    () =>
+      history.length === 0
+        ? undefined
+        : percentile(
+            history.map((sample) => sample.latencyMs),
+            95,
+          ),
+    [history],
   )
 
   if (!device) {
@@ -184,7 +197,7 @@ export function DeviceDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-7">
         <StatCard
           label="Health Score"
           value={`${score}/100`}
@@ -197,6 +210,16 @@ export function DeviceDetailPage() {
           value={`${round(device.latencyMs, 1)} ms`}
           icon={Activity}
           hint={`Threshold ${thresholds.latencyMs} ms`}
+        />
+        <StatCard
+          label="P95 Latency"
+          value={p95Latency === undefined ? '—' : `${round(p95Latency, 1)} ms`}
+          icon={Timer}
+          hint={
+            p95Latency === undefined
+              ? 'Awaiting history'
+              : `${history.length} samples`
+          }
         />
         <StatCard
           label="Packet Loss"

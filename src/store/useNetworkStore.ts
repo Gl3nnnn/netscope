@@ -14,6 +14,7 @@ import { mulberry32, seedFromParam, type Rng } from '@/simulation/random'
 import { buildSeedDevices, deviceFromInput } from '@/simulation/seed'
 import { runTick } from '@/simulation/engine'
 import {
+  coerceHistory,
   exportDevicesJson,
   STORAGE_VERSION,
   migratePersistedNetwork,
@@ -372,11 +373,18 @@ export const useNetworkStore = create<NetworkState>()(
           },
         })
         statusHistory.clear()
+        const ids = new Set(payload.devices.map((device) => device.id))
+        const history: Record<string, MetricSample[]> = {}
+        for (const [id, samples] of Object.entries(
+          coerceHistory(payload?.history, payload.settings.maxHistoryPoints),
+        )) {
+          if (ids.has(id)) history[id] = samples
+        }
         set({
           devices: payload.devices,
           incidents: payload.incidents.slice(0, MAX_INCIDENTS),
           events: boundEvents(payload.events),
-          history: {},
+          history,
           lastTick: now,
         })
       },

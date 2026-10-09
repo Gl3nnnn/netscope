@@ -107,6 +107,7 @@ export function SettingsPage() {
       devices,
       incidents,
       events,
+      history,
       settings: {
         theme: state.theme,
         refreshIntervalMs: state.refreshIntervalMs,

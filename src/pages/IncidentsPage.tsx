@@ -124,9 +124,7 @@ export function IncidentsPage() {
           <div className="space-y-0.5">
             <p>Opened {formatDateTime(incident.createdAt)}</p>
             {incident.status !== 'resolved' ? (
-              <p>
-                Open for {formatAge(elapsedMs(incident.createdAt, now))}
-              </p>
+              <p>Open for {formatAge(elapsedMs(incident.createdAt, now))}</p>
             ) : null}
             <p>Updated {formatRelativeTime(incident.updatedAt)}</p>
             {incident.acknowledgedAt ? (

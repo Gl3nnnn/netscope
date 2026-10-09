@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   coerceDevices,
+  coerceHistory,
   exportDevicesJson,
   exportFullState,
   isValidDeviceType,
@@ -15,6 +16,19 @@ import {
 import { DEFAULT_SETTINGS } from '../../store/useSettingsStore'
 import { buildSeedDevices } from '../../simulation/seed'
 import { mulberry32 } from '../../simulation/random'
+import type { MetricSample } from '../../types'
+
+function sample(t: number, latencyMs: number): MetricSample {
+  return {
+    t,
+    latencyMs,
+    packetLossPct: 0,
+    availabilityPct: 100,
+    throughputMbps: 0,
+    cpuPct: 0,
+    memoryPct: 0,
+  }
+}
 
 describe('validators', () => {
   it('validates IPv4 addresses', () => {
@@ -177,6 +191,40 @@ describe('coerceDevices', () => {
   })
 })
 
+describe('coerceHistory', () => {
+  it('returns an empty object for non-object input', () => {
+    expect(coerceHistory(null, 10)).toEqual({})
+    expect(coerceHistory(['x'], 10)).toEqual({})
+  })
+
+  it('bounds each series to the most recent samples', () => {
+    const result = coerceHistory(
+      {
+        dev1: [{ t: 1 }, { t: 2 }, { t: 3 }],
+      },
+      2,
+    )
+    expect(result.dev1).toHaveLength(2)
+    expect(result.dev1[0].t).toBe(2)
+    expect(result.dev1[1].t).toBe(3)
+  })
+
+  it('coerces sample fields to safe defaults', () => {
+    const result = coerceHistory({ dev1: ['garbage'] }, 5)
+    expect(result.dev1).toHaveLength(1)
+    expect(result.dev1[0]).toMatchObject({
+      t: 0,
+      latencyMs: 0,
+      availabilityPct: 100,
+      cpuPct: 0,
+    })
+  })
+
+  it('drops malformed series', () => {
+    expect(coerceHistory({ dev1: 'nope' }, 5)).toEqual({})
+  })
+})
+
 describe('full-state backup', () => {
   it('round-trips a backup file', () => {
     const devices = buildSeedDevices(mulberry32(2), Date.now())
@@ -190,6 +238,50 @@ describe('full-state backup', () => {
     expect(result.ok).toBe(true)
     expect(result.data?.devices).toHaveLength(devices.length)
     expect(result.data?.settings).toBeDefined()
+  })
+
+  it('round-trips per-device history in a backup', () => {
+    const devices = buildSeedDevices(mulberry32(2), Date.now())
+    const json = exportFullState({
+      devices,
+      incidents: [],
+      events: [],
+      history: {
+        [devices[0].id]: [sample(1, 12), sample(2, 18)],
+      },
+      settings: { ...DEFAULT_SETTINGS, maxHistoryPoints: 2 },
+    })
+    const result = parseFullState(json)
+    expect(result.ok).toBe(true)
+    expect(result.data?.history?.[devices[0].id]).toHaveLength(2)
+    expect(result.data?.history?.[devices[0].id]?.[1].t).toBe(2)
+  })
+
+  it('bounds backup history to the restored maxHistoryPoints', () => {
+    const devices = buildSeedDevices(mulberry32(2), Date.now())
+    const json = exportFullState({
+      devices,
+      incidents: [],
+      events: [],
+      history: {
+        [devices[0].id]: [
+          sample(1, 0),
+          sample(2, 0),
+          sample(3, 0),
+          sample(4, 0),
+          sample(5, 0),
+          sample(6, 0),
+          sample(7, 0),
+          sample(8, 0),
+          sample(9, 0),
+          sample(10, 0),
+        ],
+      },
+      settings: { ...DEFAULT_SETTINGS, maxHistoryPoints: 8 },
+    })
+    const result = parseFullState(json)
+    expect(result.data?.history?.[devices[0].id]).toHaveLength(8)
+    expect(result.data?.history?.[devices[0].id]?.[0].t).toBe(3)
   })
 
   it('stamps the current storage version', () => {

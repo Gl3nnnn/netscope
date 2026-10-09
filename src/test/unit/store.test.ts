@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useNetworkStore } from '../../store/useNetworkStore'
 import { useSettingsStore } from '../../store/useSettingsStore'
-import type { Incident } from '../../types'
+import type { Incident, MetricSample } from '../../types'
 
 const incident = (): Incident => ({
   id: 'inc_test',
@@ -13,6 +13,18 @@ const incident = (): Incident => ({
   createdAt: 1_700_000_000_000,
   updatedAt: 1_700_000_000_000,
 })
+
+function sample(t: number, latencyMs: number): MetricSample {
+  return {
+    t,
+    latencyMs,
+    packetLossPct: 0,
+    availabilityPct: 100,
+    throughputMbps: 0,
+    cpuPct: 0,
+    memoryPct: 0,
+  }
+}
 
 describe('useNetworkStore', () => {
   beforeEach(() => {
@@ -122,6 +134,13 @@ describe('useNetworkStore', () => {
           message: 'Restored',
         },
       ],
+      history: {
+        restored_1: [
+          sample(1, 12),
+          sample(2, 18),
+        ],
+        orphaned_dev: [sample(1, 9)],
+      },
       settings: {
         theme: 'light',
         refreshIntervalMs: 10000,
@@ -142,7 +161,9 @@ describe('useNetworkStore', () => {
     expect(state.devices[0].name).toBe('restored-router')
     expect(state.incidents[0].id).toBe('inc_restored')
     expect(state.events[0].message).toBe('Restored')
-    expect(state.history).toEqual({})
+    expect(state.history['restored_1']).toHaveLength(2)
+    expect(state.history['restored_1'][1].latencyMs).toBe(18)
+    expect(state.history['orphaned_dev']).toBeUndefined()
 
     const appSettings = useSettingsStore.getState()
     expect(appSettings.theme).toBe('light')

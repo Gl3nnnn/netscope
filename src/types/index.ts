@@ -140,6 +140,8 @@ export interface BackupFile {
   devices: Device[]
   incidents: Incident[]
   events: TimelineEvent[]
+  /** Per-device rolling history, bounded to `settings.maxHistoryPoints`. */
+  history?: Record<string, MetricSample[]>
   settings: Settings
 }
 

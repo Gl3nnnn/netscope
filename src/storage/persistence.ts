@@ -4,6 +4,7 @@ import type {
   Device,
   DeviceType,
   Incident,
+  MetricSample,
   PersistedState,
   Settings,
   TimelineEvent,
@@ -229,6 +230,46 @@ function asArray<T>(value: unknown): T[] {
 }
 
 /**
+ * Validate and normalise a single raw history sample. Invalid fields fall back
+ * to safe defaults so one corrupt record cannot poison a device's series.
+ */
+function normalizeSample(raw: unknown): MetricSample {
+  const r =
+    raw && typeof raw === 'object'
+      ? (raw as Record<string, unknown>)
+      : ({} as Record<string, unknown>)
+  return {
+    t: num(r.t, 0, 0, Number.MAX_SAFE_INTEGER),
+    latencyMs: round(num(r.latencyMs, 0, 0, 5000), 2),
+    packetLossPct: round(num(r.packetLossPct, 0, 0, 100), 2),
+    availabilityPct: round(num(r.availabilityPct, 100, 0, 100), 3),
+    throughputMbps: round(num(r.throughputMbps, 0, 0, 100000), 1),
+    cpuPct: round(num(r.cpuPct, 0, 0, 100), 1),
+    memoryPct: round(num(r.memoryPct, 0, 0, 100), 1),
+  }
+}
+
+/**
+ * Best-effort coercion of an unknown value into per-device history, keeping
+ * the most recent `maxPoints` samples for each device. Corrupt series are
+ * dropped rather than thrown.
+ */
+export function coerceHistory(
+  raw: unknown,
+  maxPoints: number,
+): Record<string, MetricSample[]> {
+  if (!raw || typeof raw !== 'object') return {}
+  const limit = Math.max(1, Math.floor(maxPoints))
+  const history: Record<string, MetricSample[]> = {}
+  for (const [id, samples] of Object.entries(raw as Record<string, unknown>)) {
+    if (!Array.isArray(samples)) continue
+    const cleaned = samples.slice(-limit).map(normalizeSample)
+    if (cleaned.length > 0) history[id] = cleaned
+  }
+  return history
+}
+
+/**
  * Normalise persisted network state across storage versions. Version 1 -> 2
  * only added optional `Device` flags, so the migration is defensive coercion
  * of every collection.
@@ -367,13 +408,17 @@ export function parseFullState(text: string): FullStateImportResult {
     }
   }
 
+  const settings = normalizeSettings(p.settings)
+  const history = coerceHistory(p.history, settings.maxHistoryPoints)
+
   return {
     ok: true,
     data: {
       devices,
       incidents: asArray<Incident>(p.incidents),
       events: asArray<TimelineEvent>(p.events),
-      settings: normalizeSettings(p.settings),
+      history,
+      settings,
     },
   }
 }
