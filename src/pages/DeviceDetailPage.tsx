@@ -10,6 +10,7 @@ import {
   Server,
   Signal,
   Wifi,
+  Wrench,
 } from 'lucide-react'
 import {
   Area,
@@ -41,6 +42,7 @@ import {
   HEALTH_LABELS,
   DEVICE_TYPE_LABELS,
 } from '@/lib/health'
+import { utilizationPct } from '@/lib/capacity'
 import {
   formatClock,
   formatDateTime,
@@ -68,6 +70,7 @@ export function DeviceDetailPage() {
   const history = useNetworkStore((state) => state.history[id] ?? [])
   const incidents = useNetworkStore((state) => state.incidents)
   const events = useNetworkStore((state) => state.events)
+  const toggleMaintenance = useNetworkStore((state) => state.toggleMaintenance)
   const thresholds = useSettingsStore((state) => state.thresholds)
 
   const deviceIncidents = useMemo(
@@ -137,7 +140,7 @@ export function DeviceDetailPage() {
                   <Badge variant="warning">Flapping</Badge>
                 ) : null}
                 {device.inMaintenance ? (
-                  <Badge variant="info">Maintenance</Badge>
+                  <Badge variant="warning">In maintenance</Badge>
                 ) : null}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -153,7 +156,22 @@ export function DeviceDetailPage() {
               label="Last seen"
               value={formatRelativeTime(device.lastSeen)}
             />
+            <Field
+              label="Utilisation"
+              value={`${round(
+                utilizationPct(device.throughputMbps, device.capacityMbps),
+                1,
+              )}%`}
+            />
           </dl>
+          <Button
+            variant={device.inMaintenance ? 'outline' : 'secondary'}
+            size="sm"
+            onClick={() => toggleMaintenance(device.id)}
+          >
+            <Wrench className="size-4" />
+            {device.inMaintenance ? 'Exit maintenance' : 'Enter maintenance'}
+          </Button>
           {device.tags.length > 0 ? (
             <div className="flex flex-wrap gap-1.5">
               {device.tags.map((tag) => (

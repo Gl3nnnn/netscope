@@ -19,6 +19,7 @@ import {
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { SEVERITY_LABELS } from '@/lib/health'
 import { formatDateTime, formatRelativeTime } from '@/lib/format'
+import { elapsedMs, formatAge } from '@/lib/time'
 
 const SEVERITIES: Severity[] = ['critical', 'high', 'medium', 'low']
 
@@ -31,6 +32,7 @@ const STATUS_VARIANT = {
 export function IncidentsPage() {
   const incidents = useNetworkStore((state) => state.incidents)
   const devices = useNetworkStore((state) => state.devices)
+  const now = useNetworkStore((state) => state.lastTick)
   const acknowledgeIncident = useNetworkStore(
     (state) => state.acknowledgeIncident,
   )
@@ -121,12 +123,20 @@ export function IncidentsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
           <div className="space-y-0.5">
             <p>Opened {formatDateTime(incident.createdAt)}</p>
+            {incident.status !== 'resolved' ? (
+              <p>
+                Open for {formatAge(elapsedMs(incident.createdAt, now))}
+              </p>
+            ) : null}
             <p>Updated {formatRelativeTime(incident.updatedAt)}</p>
             {incident.acknowledgedAt ? (
               <p>Acknowledged {formatRelativeTime(incident.acknowledgedAt)}</p>
             ) : null}
             {incident.resolvedAt ? (
-              <p>Resolved {formatDateTime(incident.resolvedAt)}</p>
+              <p>
+                Resolved after{' '}
+                {formatAge(elapsedMs(incident.createdAt, incident.resolvedAt))}
+              </p>
             ) : null}
           </div>
 

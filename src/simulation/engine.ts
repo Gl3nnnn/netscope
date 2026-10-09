@@ -42,11 +42,11 @@ export function runTick(input: TickInput): TickResult {
   const { thresholds, incidentFrequency, now, rng } = input
   const steps = Math.max(1, Math.round(input.steps))
   const stepMs = Math.max(1000, input.stepMs ? input.stepMs : 5000)
-
   const events: TimelineEvent[] = []
   let devices = input.devices
 
   const sites = [...new Set(input.devices.map((device) => device.site))]
+  const disturbedSites = new Set<string>()
   const load = trafficMultiplier(now)
   const siteOutageChance = 0.02 * incidentFrequency * (0.6 + 0.8 * load)
 
@@ -60,6 +60,7 @@ export function runTick(input: TickInput): TickResult {
     const distressedSite =
       sites.length > 0 && rng.chance(siteOutageChance) ? rng.pick(sites) : null
     if (distressedSite) {
+      disturbedSites.add(distressedSite)
       events.push({
         id: createId('evt'),
         timestamp: eventTime,
@@ -98,6 +99,7 @@ export function runTick(input: TickInput): TickResult {
     frequency: incidentFrequency / Math.max(1, steps),
     rng,
     now,
+    affectedSiteIds: [...disturbedSites],
   })
   events.push(...generated.events)
 

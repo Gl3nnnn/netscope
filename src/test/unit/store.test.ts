@@ -57,6 +57,19 @@ describe('useNetworkStore', () => {
     expect(state.history[id]).toBeUndefined()
   })
 
+  it('toggles maintenance on a device and clears flapping', () => {
+    const id = useNetworkStore.getState().devices[0].id
+    useNetworkStore.getState().toggleMaintenance(id)
+    const state = useNetworkStore.getState()
+    expect(state.devices.find((d) => d.id === id)?.inMaintenance).toBe(true)
+
+    useNetworkStore.getState().toggleMaintenance(id)
+    expect(
+      useNetworkStore.getState().devices.find((d) => d.id === id)
+        ?.inMaintenance,
+    ).toBe(false)
+  })
+
   it('imports devices in replace mode', () => {
     useNetworkStore.getState().importDevices(
       [

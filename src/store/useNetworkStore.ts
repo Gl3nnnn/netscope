@@ -73,6 +73,7 @@ export interface NetworkState {
   addDevice: (input: DeviceInput) => Device
   updateDevice: (id: string, patch: Partial<DeviceInput>) => void
   deleteDevice: (id: string) => void
+  toggleMaintenance: (id: string) => void
   importDevices: (devices: Device[], mode: 'merge' | 'replace') => void
   exportDevices: () => string
   restoreBackup: (payload: BackupPayload) => void
@@ -283,6 +284,34 @@ export const useNetworkStore = create<NetworkState>()(
                 type: 'device',
                 deviceId: id,
                 message: `Device deleted: ${target?.name ?? id}`,
+              },
+              ...state.events,
+            ]),
+          }
+        })
+      },
+
+      toggleMaintenance: (id) => {
+        const now = Date.now()
+        set((state) => {
+          const target = state.devices.find((device) => device.id === id)
+          if (!target) return state
+          const inMaintenance = !(target.inMaintenance ?? false)
+          return {
+            devices: state.devices.map((device) =>
+              device.id === id
+                ? { ...device, inMaintenance, flapping: false }
+                : device,
+            ),
+            events: boundEvents([
+              {
+                id: createId('evt'),
+                timestamp: now,
+                type: 'config',
+                deviceId: id,
+                message: inMaintenance
+                  ? `Maintenance started: ${target.name}`
+                  : `Maintenance ended: ${target.name}`,
               },
               ...state.events,
             ]),

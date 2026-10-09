@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Device } from '@/types'
 import { autoResolveIncidents, generateIncidents } from '@/simulation/incidents'
 import { buildSeedDevices } from '@/simulation/seed'
 import { mulberry32 } from '@/simulation/random'
@@ -80,6 +81,62 @@ describe('generateIncidents', () => {
     expect(
       incidents.some((incident) => incident.deviceIds.includes(devices[0].id)),
     ).toBe(false)
+  })
+
+  it('merges every unhealthy device of an affected site into one incident', () => {
+    const devices = buildSeedDevices(mulberry32(3), 0)
+      .slice(0, 3)
+      .map((device) => ({
+        ...device,
+        site: 'Lab',
+        status: 'offline' as const,
+        availabilityPct: 70,
+        latencyMs: 300,
+        packetLossPct: 40,
+        cpuPct: 90,
+      }))
+    const { incidents } = generateIncidents({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      frequency: 1,
+      rng: { chance: () => true },
+      now: 0,
+      affectedSiteIds: ['Lab'],
+    })
+    expect(incidents).toHaveLength(1)
+    expect(incidents[0].deviceIds).toHaveLength(3)
+    expect(incidents[0].title).toContain('Lab')
+    expect(incidents[0].severity).toBe('critical')
+  })
+
+  it('uses the worst member severity for a merged site incident', () => {
+    const devices = buildSeedDevices(mulberry32(4), 0)
+      .slice(0, 2)
+      .map((device, index): Device => {
+        const offline = index === 1
+        return {
+          ...device,
+          site: 'Lab',
+          status: offline ? 'offline' : 'online',
+          availabilityPct: offline ? 70 : 99,
+          latencyMs: offline ? 300 : 220,
+          packetLossPct: offline ? 40 : 12,
+          cpuPct: 95,
+        }
+      })
+    const { incidents } = generateIncidents({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      frequency: 1,
+      rng: { chance: () => true },
+      now: 0,
+      affectedSiteIds: ['Lab'],
+    })
+    expect(incidents).toHaveLength(1)
+    expect(incidents[0].severity).toBe('critical')
+    expect(incidents[0].deviceIds).toHaveLength(2)
   })
 })
 
