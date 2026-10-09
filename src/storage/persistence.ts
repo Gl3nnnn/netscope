@@ -5,6 +5,7 @@ import type {
   DeviceType,
   Incident,
   PersistedState,
+  Settings,
   TimelineEvent,
 } from '@/types'
 import { clamp, round } from '@/lib/format'
@@ -253,6 +254,74 @@ export interface FullStateImportResult {
   error?: string
 }
 
+/** Defensive default used when a backup file omits or corrupts settings. */
+const FALLBACK_SETTINGS: Settings = {
+  theme: 'dark',
+  refreshIntervalMs: 5000,
+  simulationSpeed: 1,
+  simulationRunning: true,
+  incidentFrequency: 0.6,
+  thresholds: { latencyMs: 60, packetLossPct: 2, availabilityPct: 99 },
+  sidebarCollapsed: false,
+  maxHistoryPoints: 120,
+}
+
+/** Coerce an unknown settings object into a safe `Settings`, over a fallback. */
+export function normalizeSettings(
+  raw: unknown,
+  fallback: Settings = FALLBACK_SETTINGS,
+): Settings {
+  if (!raw || typeof raw !== 'object') return fallback
+  const r = raw as Record<string, unknown>
+  const rawThresholds =
+    r.thresholds && typeof r.thresholds === 'object'
+      ? (r.thresholds as Record<string, unknown>)
+      : {}
+  return {
+    theme: r.theme === 'light' ? 'light' : 'dark',
+    refreshIntervalMs: num(
+      r.refreshIntervalMs,
+      fallback.refreshIntervalMs,
+      1000,
+      60000,
+    ),
+    simulationSpeed: num(r.simulationSpeed, fallback.simulationSpeed, 0.5, 8),
+    simulationRunning: r.simulationRunning === true,
+    incidentFrequency: clamp(
+      num(r.incidentFrequency, fallback.incidentFrequency, 0, 1),
+      0,
+      1,
+    ),
+    thresholds: {
+      latencyMs: num(
+        rawThresholds.latencyMs,
+        fallback.thresholds.latencyMs,
+        1,
+        5000,
+      ),
+      packetLossPct: num(
+        rawThresholds.packetLossPct,
+        fallback.thresholds.packetLossPct,
+        0,
+        100,
+      ),
+      availabilityPct: num(
+        rawThresholds.availabilityPct,
+        fallback.thresholds.availabilityPct,
+        0,
+        100,
+      ),
+    },
+    sidebarCollapsed: r.sidebarCollapsed === true,
+    maxHistoryPoints: num(
+      r.maxHistoryPoints,
+      fallback.maxHistoryPoints,
+      6,
+      240,
+    ),
+  }
+}
+
 /**
  * Parse and validate a full-state backup WITHOUT touching application state.
  * Only the collections that are present and well-formed are accepted; a
@@ -281,11 +350,6 @@ export function parseFullState(text: string): FullStateImportResult {
     }
   }
 
-  const settings = p.settings
-  if (!settings || typeof settings !== 'object') {
-    return { ok: false, error: 'The backup is missing a "settings" object.' }
-  }
-
   const devices = coerceDevices(p.devices)
   if (p.devices.length > 0 && devices.length === 0) {
     return {
@@ -300,7 +364,7 @@ export function parseFullState(text: string): FullStateImportResult {
       devices,
       incidents: asArray<Incident>(p.incidents),
       events: asArray<TimelineEvent>(p.events),
-      settings: settings as BackupPayload['settings'],
+      settings: normalizeSettings(p.settings),
     },
   }
 }

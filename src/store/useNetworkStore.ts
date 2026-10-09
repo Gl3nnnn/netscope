@@ -19,6 +19,7 @@ import {
   migratePersistedNetwork,
   type PersistedNetwork,
 } from '@/storage/persistence'
+import type { BackupPayload } from '@/types'
 import { createDebouncedStorage } from '@/storage/debouncedStorage'
 import { useSettingsStore } from './useSettingsStore'
 
@@ -74,6 +75,7 @@ export interface NetworkState {
   deleteDevice: (id: string) => void
   importDevices: (devices: Device[], mode: 'merge' | 'replace') => void
   exportDevices: () => string
+  restoreBackup: (payload: BackupPayload) => void
   acknowledgeIncident: (id: string) => void
   resolveIncident: (id: string) => void
   clearResolvedIncidents: () => void
@@ -327,6 +329,27 @@ export const useNetworkStore = create<NetworkState>()(
       },
 
       exportDevices: () => exportDevicesJson(get().devices),
+
+      restoreBackup: (payload) => {
+        const now = Date.now()
+        const currentSettings = useSettingsStore.getState()
+        useSettingsStore.setState({
+          ...currentSettings,
+          ...payload.settings,
+          thresholds: {
+            ...currentSettings.thresholds,
+            ...payload.settings.thresholds,
+          },
+        })
+        statusHistory.clear()
+        set({
+          devices: payload.devices,
+          incidents: payload.incidents.slice(0, MAX_INCIDENTS),
+          events: boundEvents(payload.events),
+          history: {},
+          lastTick: now,
+        })
+      },
 
       acknowledgeIncident: (id) => {
         const now = Date.now()

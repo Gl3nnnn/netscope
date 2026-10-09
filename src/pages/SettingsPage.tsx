@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import {
+  Archive,
   Database,
   Download,
   Gauge,
@@ -35,7 +36,10 @@ import {
 } from '@/components/ui/select'
 import { useSettingsStore, REFRESH_OPTIONS } from '@/store/useSettingsStore'
 import { useNetworkStore } from '@/store/useNetworkStore'
-import { parseDeviceImport } from '@/storage/persistence'
+import { parseDeviceImport, parseFullState } from '@/storage/persistence'
+import { exportFullState } from '@/storage/persistence'
+import { buildDevicesCsv, buildHistoryCsv } from '@/lib/csv'
+import { fileDateStamp, downloadText } from '@/lib/download'
 
 const SPEED_OPTIONS = [0.5, 1, 2, 5]
 
@@ -44,10 +48,16 @@ export function SettingsPage() {
   const exportDevices = useNetworkStore((state) => state.exportDevices)
   const importDevices = useNetworkStore((state) => state.importDevices)
   const resetDemo = useNetworkStore((state) => state.resetDemo)
+  const restoreBackup = useNetworkStore((state) => state.restoreBackup)
   const deviceCount = useNetworkStore((state) => state.devices.length)
   const seed = useNetworkStore((state) => state.seed)
+  const devices = useNetworkStore((state) => state.devices)
+  const incidents = useNetworkStore((state) => state.incidents)
+  const events = useNetworkStore((state) => state.events)
+  const history = useNetworkStore((state) => state.history)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const backupInputRef = useRef<HTMLInputElement>(null)
   const [confirmReset, setConfirmReset] = useState(false)
   const [confirmSettings, setConfirmSettings] = useState(false)
 
@@ -88,6 +98,65 @@ export function SettingsPage() {
       toast.success('Share link copied')
     } catch {
       toast.error('Could not copy the share link')
+    }
+  }
+
+  const handleExportBackup = () => {
+    const state = useSettingsStore.getState()
+    const payload = {
+      devices,
+      incidents,
+      events,
+      settings: {
+        theme: state.theme,
+        refreshIntervalMs: state.refreshIntervalMs,
+        simulationSpeed: state.simulationSpeed,
+        simulationRunning: state.simulationRunning,
+        incidentFrequency: state.incidentFrequency,
+        thresholds: { ...state.thresholds },
+        sidebarCollapsed: state.sidebarCollapsed,
+        maxHistoryPoints: state.maxHistoryPoints,
+      },
+    }
+    downloadText(
+      exportFullState(payload),
+      `netscope-backup-${fileDateStamp()}.json`,
+    )
+    toast.success('Backup exported')
+  }
+
+  const handleExportDevicesCsv = () => {
+    downloadText(
+      buildDevicesCsv(devices),
+      `netscope-devices-${fileDateStamp()}.csv`,
+    )
+    toast.success('Devices CSV exported')
+  }
+
+  const handleExportHistoryCsv = () => {
+    downloadText(
+      buildHistoryCsv(devices, history),
+      `netscope-history-${fileDateStamp()}.csv`,
+    )
+    toast.success('History CSV exported')
+  }
+
+  const handleRestore = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    try {
+      const result = parseFullState(await file.text())
+      if (!result.ok || !result.data) {
+        toast.error('Restore failed', { description: result.error })
+        return
+      }
+      restoreBackup(result.data)
+      toast.success(`Restored ${result.data.devices.length} device(s)`)
+    } catch {
+      toast.error('Restore failed', {
+        description: 'The file could not be read.',
+      })
     }
   }
 
@@ -370,6 +439,68 @@ export function SettingsPage() {
             <p className="text-xs text-muted-foreground">
               Imported JSON is validated before it is applied. Invalid files are
               rejected and your data is left untouched.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Archive className="size-4 text-primary" /> Backup &amp; export
+            </CardTitle>
+            <CardDescription>
+              Full-state backups include devices, incidents, events and
+              settings.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleExportBackup}>
+                <Download className="size-4" /> Backup (JSON)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportDevicesCsv}
+              >
+                <Download className="size-4" /> Devices CSV
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExportHistoryCsv}
+              >
+                <Download className="size-4" /> History CSV
+              </Button>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => backupInputRef.current?.click()}
+              >
+                <Upload className="size-4" /> Restore backup
+              </Button>
+              <input
+                ref={backupInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={handleRestore}
+              />
+              <span className="text-xs text-muted-foreground">
+                {deviceCount} device(s) -{' '}
+                {Object.values(history).reduce(
+                  (sum, samples) => sum + samples.length,
+                  0,
+                )}{' '}
+                history sample(s) in memory
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Restoring a backup replaces the current inventory and activity;
+              rolling history rebuilds from the restored fleet on the next
+              simulation tick.
             </p>
           </CardContent>
         </Card>

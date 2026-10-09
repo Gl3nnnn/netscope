@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useNetworkStore } from '../../store/useNetworkStore'
+import { useSettingsStore } from '../../store/useSettingsStore'
 import type { Incident } from '../../types'
 
 const incident = (): Incident => ({
@@ -93,5 +94,46 @@ describe('useNetworkStore', () => {
     const json = useNetworkStore.getState().exportDevices()
     const parsed = JSON.parse(json) as { devices: unknown[] }
     expect(parsed.devices).toHaveLength(24)
+  })
+
+  it('restores a full backup and applies its settings', () => {
+    const source = useNetworkStore.getState().devices[0]
+    useNetworkStore.getState().restoreBackup({
+      devices: [{ ...source, id: 'restored_1', name: 'restored-router' }],
+      incidents: [{ ...incident(), id: 'inc_restored' }],
+      events: [
+        {
+          id: 'evt_restored',
+          timestamp: Date.now(),
+          type: 'config',
+          message: 'Restored',
+        },
+      ],
+      settings: {
+        theme: 'light',
+        refreshIntervalMs: 10000,
+        simulationSpeed: 2,
+        simulationRunning: true,
+        incidentFrequency: 0.5,
+        thresholds: {
+          latencyMs: 100,
+          packetLossPct: 1,
+          availabilityPct: 99.9,
+        },
+        sidebarCollapsed: true,
+        maxHistoryPoints: 60,
+      },
+    })
+    const state = useNetworkStore.getState()
+    expect(state.devices).toHaveLength(1)
+    expect(state.devices[0].name).toBe('restored-router')
+    expect(state.incidents[0].id).toBe('inc_restored')
+    expect(state.events[0].message).toBe('Restored')
+    expect(state.history).toEqual({})
+
+    const appSettings = useSettingsStore.getState()
+    expect(appSettings.theme).toBe('light')
+    expect(appSettings.thresholds.latencyMs).toBe(100)
+    expect(appSettings.sidebarCollapsed).toBe(true)
   })
 })

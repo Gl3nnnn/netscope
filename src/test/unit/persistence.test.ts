@@ -204,11 +204,32 @@ describe('full-state backup', () => {
     )
   })
 
-  it('rejects a backup without a settings object', () => {
+  it('falls back to default settings when a backup omits them', () => {
     const json = JSON.stringify({ devices: [], incidents: [], events: [] })
     const result = parseFullState(json)
-    expect(result.ok).toBe(false)
-    expect(result.error).toMatch(/settings/i)
+    expect(result.ok).toBe(true)
+    expect(result.data?.settings).toMatchObject({
+      theme: 'dark',
+      maxHistoryPoints: 120,
+    })
+  })
+
+  it('normalises invalid settings in a backup', () => {
+    const json = JSON.stringify({
+      devices: [],
+      incidents: [],
+      events: [],
+      settings: {
+        theme: 'neon',
+        refreshIntervalMs: -5,
+        maxHistoryPoints: 'lots',
+      },
+    })
+    const result = parseFullState(json)
+    expect(result.ok).toBe(true)
+    expect(result.data?.settings.theme).toBe('dark')
+    expect(result.data?.settings.refreshIntervalMs).toBe(1000)
+    expect(result.data?.settings.maxHistoryPoints).toBe(120)
   })
 
   it('rejects non-JSON and empty input', () => {
