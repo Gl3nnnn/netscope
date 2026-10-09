@@ -7,6 +7,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { DemoBadge } from '@/components/common/DemoBadge'
+import { NotificationsMenu } from './NotificationsMenu'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { formatClock } from '@/lib/format'
 
@@ -108,6 +109,8 @@ export function Header({ onToggleSidebar, onOpenMobileNav }: HeaderProps) {
             Switch to {theme === 'dark' ? 'light' : 'dark'} mode
           </TooltipContent>
         </Tooltip>
+
+        <NotificationsMenu />
       </div>
     </header>
   )
