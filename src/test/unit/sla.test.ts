@@ -35,6 +35,7 @@ const makeDevice = (
   packetLossPct: 0,
   availabilityPct: 99,
   throughputMbps: 100,
+  capacityMbps: 1000,
   cpuPct: 10,
   memoryPct: 20,
   uptimeSec: 3600,

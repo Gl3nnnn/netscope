@@ -9,6 +9,7 @@ import type {
   TimelineEvent,
 } from '@/types'
 import { clamp, round } from '@/lib/format'
+import { TYPE_PROFILES } from '@/simulation/profiles'
 
 export const STORAGE_KEY = 'netscope'
 export const STORAGE_VERSION = 2
@@ -111,6 +112,14 @@ function normalizeDevice(raw: unknown, index: number): Device {
     packetLossPct: round(num(r.packetLossPct, 0.1, 0, 100), 2),
     availabilityPct: round(availability, 3),
     throughputMbps: round(num(r.throughputMbps, 500, 0, 100000), 1),
+    // Old persisted records predate the capacity field; default it by type
+    // so utilisation never has to cope with a missing ceiling.
+    capacityMbps: num(
+      r.capacityMbps,
+      TYPE_PROFILES[r.type].capacityMbps,
+      10,
+      400000,
+    ),
     cpuPct: round(num(r.cpuPct, 40, 0, 100), 1),
     memoryPct: round(num(r.memoryPct, 45, 0, 100), 1),
     uptimeSec: num(r.uptimeSec, 3600, 0, Number.MAX_SAFE_INTEGER),

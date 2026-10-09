@@ -21,6 +21,7 @@ function make(partial: Partial<Device> & Pick<Device, 'id' | 'name'>): Device {
     packetLossPct: partial.packetLossPct ?? 0,
     availabilityPct: partial.availabilityPct ?? 100,
     throughputMbps: partial.throughputMbps ?? 100,
+    capacityMbps: partial.capacityMbps ?? 1000,
     cpuPct: partial.cpuPct ?? 10,
     memoryPct: partial.memoryPct ?? 20,
     uptimeSec: partial.uptimeSec ?? 1000,

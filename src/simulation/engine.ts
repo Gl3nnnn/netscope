@@ -9,6 +9,7 @@ import { createId } from '@/lib/id'
 import { advanceDevice } from './metrics'
 import { autoResolveIncidents, generateIncidents } from './incidents'
 import type { Rng } from './random'
+import { trafficMultiplier } from './timecurve'
 
 export interface TickInput {
   devices: Device[]
@@ -19,6 +20,8 @@ export interface TickInput {
   incidentFrequency: number
   now: number
   rng: Rng
+  /** Simulated wall-clock time between inner steps, in milliseconds. */
+  stepMs?: number
 }
 
 export interface TickResult {
@@ -38,14 +41,20 @@ export interface TickResult {
 export function runTick(input: TickInput): TickResult {
   const { thresholds, incidentFrequency, now, rng } = input
   const steps = Math.max(1, Math.round(input.steps))
+  const stepMs = Math.max(1000, input.stepMs ? input.stepMs : 5000)
 
   const events: TimelineEvent[] = []
   let devices = input.devices
 
   const sites = [...new Set(input.devices.map((device) => device.site))]
-  const siteOutageChance = 0.02 * incidentFrequency
+  const load = trafficMultiplier(now)
+  const siteOutageChance = 0.02 * incidentFrequency * (0.6 + 0.8 * load)
 
   for (let s = 0; s < steps; s += 1) {
+    // Inner steps share one wall-clock tick but are simulated as if they
+    // happened at staggered times, so history and events read naturally.
+    const eventTime = now - (steps - 1 - s) * stepMs
+
     // Occasionally a whole site is disturbed at once, degrading every device in
     // it and producing correlated incidents (realistic for shared uplinks).
     const distressedSite =
@@ -53,7 +62,7 @@ export function runTick(input: TickInput): TickResult {
     if (distressedSite) {
       events.push({
         id: createId('evt'),
-        timestamp: now,
+        timestamp: eventTime,
         type: 'status',
         severity: 'high',
         message: `Site-wide disturbance detected at ${distressedSite}`,
@@ -62,9 +71,10 @@ export function runTick(input: TickInput): TickResult {
 
     const advanced = devices.map((device) => {
       const affected = distressedSite !== null && device.site === distressedSite
-      return advanceDevice(device, rng, thresholds, now, {
+      return advanceDevice(device, rng, thresholds, eventTime, {
         intensity: affected ? 2.5 : 1,
         outageBoost: affected ? 6 : 0,
+        stepMs,
       })
     })
     devices = advanced.map((entry) => entry.device)
@@ -73,7 +83,7 @@ export function runTick(input: TickInput): TickResult {
       if (!entry.statusChanged) continue
       events.push({
         id: createId('evt'),
-        timestamp: now,
+        timestamp: eventTime,
         type: 'status',
         deviceId: entry.device.id,
         message: `${entry.device.name} changed status to ${entry.device.status}`,

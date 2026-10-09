@@ -1,8 +1,10 @@
 import type { Device, Thresholds } from '@/types'
 import { clamp, round } from '@/lib/format'
+import { utilizationPct } from '@/lib/capacity'
 import { deriveStatus } from '@/lib/health'
 import type { Rng } from './random'
 import { profileFor } from './profiles'
+import { trafficMultiplier } from './timecurve'
 
 export interface AdvancedDevice {
   device: Device
@@ -14,14 +16,18 @@ export interface AdvanceOptions {
   intensity?: number
   /** Extra outage pressure (e.g. during a simulated site-wide disturbance). */
   outageBoost?: number
+  /** Simulated wall-clock time between inner steps, in milliseconds. */
+  stepMs?: number
 }
 
 /**
  * Advance a single device's simulated telemetry by one step.
  *
  * Values mean-revert toward the device type's baseline profile (from
- * `profiles.ts`) while a random walk adds noise. Pure aside from the injected
- * RNG, so the whole simulation stays deterministic and unit testable.
+ * `profiles.ts`) while a random walk adds noise, and the daily/weekly
+ * traffic curve (`timecurve.ts`) shifts throughput along with the hour.
+ * Pure aside from the injected RNG, so the whole simulation stays
+ * deterministic and unit testable.
  */
 export function advanceDevice(
   device: Device,
@@ -30,9 +36,10 @@ export function advanceDevice(
   now: number,
   options: AdvanceOptions = {},
 ): AdvancedDevice {
-  const { intensity = 1, outageBoost = 0 } = options
+  const { intensity = 1, outageBoost = 0, stepMs = 5000 } = options
   const profile = profileFor(device.type)
   const volatility = profile.volatility * intensity
+  const load = trafficMultiplier(now)
 
   const walk = (
     value: number,
@@ -50,15 +57,31 @@ export function advanceDevice(
   let latency = walk(device.latencyMs, profile.latencyMs, 0.8, 0.4, 400)
   let loss = walk(device.packetLossPct, profile.packetLossPct, 0.15, 0, 40)
   let availability = walk(device.availabilityPct, 99.9, 0.05, 80, 100)
+
+  // Throughput rides the daily traffic curve around the type baseline.
   const throughput = walk(
     device.throughputMbps,
-    profile.throughputMbps,
+    profile.throughputMbps * load,
     25,
     10,
-    9000,
+    Math.max(2000, profile.capacityMbps * 1.5),
   )
+  const util = utilizationPct(throughput, profile.capacityMbps)
+
   let cpu = walk(device.cpuPct, profile.cpuPct, 2.5, 2, 100)
-  const memory = walk(device.memoryPct, profile.memoryPct, 1.6, 10, 99)
+
+  // Memory creeps upward until the occasional GC-style reclaim drops it again,
+  // producing the classic sawtooth pattern.
+  let memory = clamp(
+    device.memoryPct + rng.range(0.05, 0.35) * volatility,
+    10,
+    99,
+  )
+  if (rng.chance(0.025 * intensity)) {
+    memory = clamp(memory - rng.range(8, 20), 10, 99)
+  } else if (rng.chance(0.004 * intensity)) {
+    memory = clamp(memory + rng.range(2, 8), 10, 99)
+  }
 
   // Simulated maintenance windows occasionally take a device out of the
   // incident stream while it is being worked on.
@@ -69,12 +92,15 @@ export function advanceDevice(
     inMaintenance = true
   }
 
-  // Occasional events create realistic spikes / outages.
-  const spiking = !inMaintenance && rng.chance(0.04 * intensity)
+  // Occasional events create realistic spikes / outages. Busier hours are
+  // slightly more failure-prone.
+  const loadFactor = 0.6 + 0.8 * load
+  const spiking = !inMaintenance && rng.chance(0.04 * intensity * loadFactor)
   const outageChance =
     (device.status === 'offline' ? 0.25 : 0.004) *
     (1 + outageBoost) *
-    (inMaintenance ? 0.15 : 1)
+    (inMaintenance ? 0.15 : 1) *
+    loadFactor
   const recovering = device.status === 'offline' && rng.chance(0.45)
 
   if (spiking) {
@@ -82,6 +108,9 @@ export function advanceDevice(
     loss += rng.range(1.5, 6)
     cpu = clamp(cpu + rng.range(10, 30), 2, 100)
   }
+
+  // Utilisation places a floor under CPU: a heavily loaded box is busy.
+  cpu = clamp(cpu + (util / 100) * 10, 2, 100)
 
   let status: Device['status'] = device.status
   if (device.status === 'offline' && !recovering) {
@@ -110,7 +139,7 @@ export function advanceDevice(
     memoryPct: round(memory, 1),
     inMaintenance,
     uptimeSec:
-      status === 'offline' ? 0 : device.uptimeSec + Math.round(rng.range(1, 3)),
+      status === 'offline' ? 0 : device.uptimeSec + Math.round(stepMs / 1000),
     lastSeen: status === 'offline' ? device.lastSeen : now,
   }
 

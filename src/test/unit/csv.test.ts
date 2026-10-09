@@ -15,6 +15,7 @@ const device = (overrides: Partial<Device> = {}): Device => ({
   packetLossPct: 0,
   availabilityPct: 99.999,
   throughputMbps: 1250.5,
+  capacityMbps: 10000,
   cpuPct: 42,
   memoryPct: 60,
   uptimeSec: 86400,

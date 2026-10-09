@@ -15,6 +15,7 @@ import { polygonCentroid, polygonHull, select } from 'd3'
 import { zoom, zoomIdentity, type D3ZoomEvent, type ZoomTransform } from 'd3'
 import type { Device, DeviceType, DeviceStatus } from '@/types'
 import { STATUS_HEX, DEVICE_STATUS_LABELS } from '@/lib/health'
+import { utilizationPct } from '@/lib/capacity'
 import { NODE_RADIUS } from './topology'
 import type { TopoLink } from './topology'
 import { focusGroup } from './topology'
@@ -160,8 +161,8 @@ export function TopologyCanvas({
     return focusGroup(nodeIds, flatLinks, selectedId)
   }, [focusMode, selectedId, layout.links, layout.nodes])
 
-  const flowDuration = (throughputMbps: number) =>
-    Math.max(0.6, Math.min(3, 3 - throughputMbps / 1200))
+  const flowDuration = (utilization: number) =>
+    Math.max(0.6, Math.min(3, 3 - (utilization / 100) * 2.4))
 
   const statuses: DeviceStatus[] = ['online', 'degraded', 'offline']
 
@@ -237,9 +238,15 @@ export function TopologyCanvas({
             })
             .map(({ source, target }, index) => {
               const color = linkStroke(source)
-              const traffic = Math.max(
-                source.device.throughputMbps,
-                target.device.throughputMbps,
+              const utilization = Math.max(
+                utilizationPct(
+                  source.device.throughputMbps,
+                  source.device.capacityMbps,
+                ),
+                utilizationPct(
+                  target.device.throughputMbps,
+                  target.device.capacityMbps,
+                ),
               )
               return (
                 <g key={index}>
@@ -261,7 +268,9 @@ export function TopologyCanvas({
                     strokeOpacity={0.8}
                     strokeWidth={1.2}
                     className="topo-traffic"
-                    style={{ animationDuration: `${flowDuration(traffic)}s` }}
+                    style={{
+                      animationDuration: `${flowDuration(utilization)}s`,
+                    }}
                   />
                 </g>
               )
@@ -341,6 +350,18 @@ export function TopologyCanvas({
                   style={{ fontSize: 10 }}
                 >
                   {device.name}
+                </text>
+                <text
+                  y={radius + 24}
+                  textAnchor="middle"
+                  className="fill-muted-foreground/70"
+                  style={{ fontSize: 8.5 }}
+                >
+                  {utilizationPct(
+                    device.throughputMbps,
+                    device.capacityMbps,
+                  ).toFixed(0)}
+                  % util
                 </text>
               </g>
             )

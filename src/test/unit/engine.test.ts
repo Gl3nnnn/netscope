@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { runTick } from '../../simulation/engine'
+import { advanceDevice } from '../../simulation/metrics'
 import { buildSeedDevices } from '../../simulation/seed'
-import { mulberry32 } from '../../simulation/random'
+import { mulberry32, type Rng } from '../../simulation/random'
 import { DEFAULT_THRESHOLDS } from '../../store/useSettingsStore'
 
 const NOW = 1_700_000_000_000
+
+/** RNG that is calm on purpose: every chance() fails, noise/range are zero. */
+const calm: Rng = {
+  next: () => 0,
+  range: () => 0,
+  int: () => 0,
+  pick: <T>(items: readonly T[]) => items[0] as T,
+  chance: () => false,
+  noise: () => 0,
+}
 
 describe('runTick', () => {
   it('advances every device and emits a sample for each', () => {
@@ -96,5 +107,56 @@ describe('runTick', () => {
     })
     expect(result.incidents.length).toBeGreaterThan(0)
     expect(result.events.some((event) => event.type === 'incident')).toBe(true)
+  })
+
+  it('staggers inner-step event timestamps across the tick window', () => {
+    const devices = buildSeedDevices(mulberry32(7), NOW)
+    const stepMs = 5000
+    const steps = 3
+    const result = runTick({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      steps,
+      incidentFrequency: 0.8,
+      now: NOW,
+      stepMs,
+      rng: mulberry32(77),
+    })
+    const earliest = NOW - (steps - 1) * stepMs
+    for (const event of result.events) {
+      expect(event.timestamp).toBeGreaterThanOrEqual(earliest)
+      expect(event.timestamp).toBeLessThanOrEqual(NOW)
+    }
+    for (const device of result.devices) {
+      expect(result.samples[device.id].t).toBe(NOW)
+    }
+  })
+})
+
+describe('advanceDevice', () => {
+  it('accumulates uptime by stepMs while a device stays online', () => {
+    const online = buildSeedDevices(mulberry32(7), NOW)[0]
+    const advanced = advanceDevice(online, calm, DEFAULT_THRESHOLDS, NOW, {
+      stepMs: 10000,
+    })
+    expect(advanced.device.status).toBe('online')
+    expect(advanced.device.uptimeSec).toBe(online.uptimeSec + 10)
+    expect(advanced.device.lastSeen).toBe(NOW)
+  })
+
+  it('keeps uptime at zero while a device stays offline', () => {
+    const device = {
+      ...buildSeedDevices(mulberry32(7), NOW)[0],
+      status: 'offline' as const,
+      uptimeSec: 0,
+      lastSeen: NOW - 60_000,
+    }
+    const advanced = advanceDevice(device, calm, DEFAULT_THRESHOLDS, NOW, {
+      stepMs: 10000,
+    })
+    expect(advanced.device.status).toBe('offline')
+    expect(advanced.device.uptimeSec).toBe(0)
+    expect(advanced.device.lastSeen).toBe(device.lastSeen)
   })
 })

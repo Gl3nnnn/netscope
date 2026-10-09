@@ -41,6 +41,8 @@ export interface Device {
   availabilityPct: number
   /** Simulated throughput in Mbps. */
   throughputMbps: number
+  /** The device's capacity ceiling in Mbps (from its type profile). */
+  capacityMbps: number
   /** Simulated CPU utilisation percentage (0-100). */
   cpuPct: number
   /** Simulated memory utilisation percentage (0-100). */

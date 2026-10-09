@@ -10,6 +10,8 @@ export interface DeviceProfile {
   latencyMs: number
   packetLossPct: number
   throughputMbps: number
+  /** The device's capacity ceiling in Mbps, used to derive utilisation. */
+  capacityMbps: number
   cpuPct: number
   memoryPct: number
   /** Multiplier applied to random-walk spread and spike intensity. */
@@ -21,6 +23,7 @@ export const TYPE_PROFILES: Record<DeviceType, DeviceProfile> = {
     latencyMs: 3,
     packetLossPct: 0.05,
     throughputMbps: 1800,
+    capacityMbps: 10000,
     cpuPct: 32,
     memoryPct: 55,
     volatility: 0.9,
@@ -29,6 +32,7 @@ export const TYPE_PROFILES: Record<DeviceType, DeviceProfile> = {
     latencyMs: 1.4,
     packetLossPct: 0.02,
     throughputMbps: 3200,
+    capacityMbps: 10000,
     cpuPct: 24,
     memoryPct: 48,
     volatility: 0.7,
@@ -37,6 +41,7 @@ export const TYPE_PROFILES: Record<DeviceType, DeviceProfile> = {
     latencyMs: 6,
     packetLossPct: 0.08,
     throughputMbps: 1200,
+    capacityMbps: 5000,
     cpuPct: 41,
     memoryPct: 62,
     volatility: 1.1,
@@ -45,6 +50,7 @@ export const TYPE_PROFILES: Record<DeviceType, DeviceProfile> = {
     latencyMs: 12,
     packetLossPct: 0.1,
     throughputMbps: 640,
+    capacityMbps: 2000,
     cpuPct: 48,
     memoryPct: 70,
     volatility: 1.3,
@@ -53,6 +59,7 @@ export const TYPE_PROFILES: Record<DeviceType, DeviceProfile> = {
     latencyMs: 9,
     packetLossPct: 0.35,
     throughputMbps: 420,
+    capacityMbps: 1000,
     cpuPct: 29,
     memoryPct: 52,
     volatility: 1.5,

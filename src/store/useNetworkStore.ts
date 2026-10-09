@@ -195,6 +195,7 @@ export const useNetworkStore = create<NetworkState>()(
           steps,
           incidentFrequency: settings.incidentFrequency,
           now,
+          stepMs: settings.refreshIntervalMs,
           rng,
         })
 

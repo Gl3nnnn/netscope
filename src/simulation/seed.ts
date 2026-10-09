@@ -62,6 +62,7 @@ export function makeDevice(
     throughputMbps:
       partial.throughputMbps ??
       round(profile.throughputMbps * rng.range(0.4, 0.9), 1),
+    capacityMbps: partial.capacityMbps ?? profile.capacityMbps,
     cpuPct: round(clamp(cpuBase, 2, 99), 1),
     memoryPct:
       partial.memoryPct ??
