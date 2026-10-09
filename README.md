@@ -24,20 +24,38 @@ keys and no paid services.
   recent-incidents feed.
 - **Network Topology** — an interactive D3 force-directed map with zoom, pan,
   draggable nodes, search, type/status filters, a legend and a device detail
-  panel. Layout state is intentionally isolated from monitoring state.
+  panel. **Site hulls** group devices per location, animated link dashes reflect
+  throughput traffic, and **focus (ego) mode** isolates a node and its
+  neighbours. Node positions persist to `localStorage`
+  (`netscope:topology`), so the layout survives reloads.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
-  changes.
-- **Performance** — historical latency, packet-loss and availability charts with
-  a device selector and time-window control.
+  changes. Each device has its own **detail route** (`/#/devices/:id`) with live
+  stats, history charts, incidents and activity.
+- **Performance** — per-device CPU, memory, throughput, latency, packet-loss and
+  availability charts with summary statistics and a time-window control.
+- **SLA & Uptime** — MTTA/MTTR, fleet/site uptime vs targets, incidents by
+  severity and devices falling below the 99.9% target.
 - **Incidents** — severity levels, affected devices, timestamps, an
   acknowledgement → resolution workflow, auto-resolution and a resolved history.
+  New incidents can raise **browser notifications**.
 - **Event Timeline** — a chronological feed of device status changes, incident
   activity, inventory and configuration events.
+- **Command palette** — press `Ctrl/Cmd+K` for quick navigation and actions;
+  `?` opens keyboard-shortcut help, `T` toggles the theme and `P` toggles the
+  simulation.
 - **Settings** — theme, simulation controls (run/pause, speed, refresh interval,
-  incident frequency), degradation thresholds and history bounds. Preferences
-  persist to `localStorage`.
-- **UX** — collapsible sidebar, compact header, mobile drawer navigation,
+  incident frequency), degradation thresholds and history bounds, plus
+  **full-state backup/restore** (JSON) and **CSV export** of the inventory and
+  rolling history. Preferences persist to `localStorage`.
+- **PWA & offline** — a hand-rolled service worker caches the shell and assets
+  (`/netscope/sw.js`), a web manifest enables install, and generated PNG icons
+  plus Open Graph/Twitter meta provide social previews.
+- **Seeded simulations** — every session is driven by a deterministic PRNG seed.
+  A share link (`?seed=…`) reproduces a topology; arbitrary strings are hashed
+  into seeds.
+- **UX & accessibility** — collapsible sidebar, compact header, mobile drawer,
+  keyboard operability, skip-to-content, `prefers-reduced-motion` support,
   accessible Radix primitives, loading skeletons, empty states and error
   boundaries.
 
@@ -56,6 +74,7 @@ keys and no paid services.
 | Icons       | Lucide React                                              |
 | Routing     | React Router (`HashRouter`)                               |
 | Testing     | Vitest + Testing Library                                  |
+| PWA         | Hand-rolled service worker + web manifest                 |
 | Lint/format | ESLint (flat config) + Prettier                           |
 
 ---
@@ -116,9 +135,15 @@ src/
 ### Simulation
 
 - A **seeded PRNG** (`mulberry32`) makes the telemetry deterministic and
-  unit-testable.
-- Each device random-walks latency, packet loss, availability, throughput, CPU
-  and memory, with occasional spikes and outages.
+  unit-testable. The active seed comes from the `?seed=` URL parameter (numeric
+  seeds pass through; strings are hashed with FNV-1a) and is written back to the
+  store so Settings can build a share link.
+- Each device walks toward a **type-specific baseline** (router/switch/firewall/
+  server/access point) with its own volatility, so latency, packet loss,
+  availability, throughput, CPU and memory move realistically.
+- **Maintenance windows** suppress spikes, **flapping detection** flags devices
+  that oscillate rapidly, and **correlated site-wide disturbances** degrade the
+  devices of a randomly chosen site during severe events.
 - A **health score** (0–100) blends latency, loss, availability and CPU. Incidents
   are generated from threshold breaches with a controllable frequency, then
   acknowledged/resolved manually or auto-resolved on recovery.
@@ -130,12 +155,18 @@ src/
 - `useSettingsStore` holds theme, simulation controls and thresholds.
 - `useNetworkStore` holds devices, incidents, bounded per-device metric history
   and the event log.
+- `useNotificationsStore` tracks read/unread notification IDs for incident
+  alerts.
 - Persistence uses Zustand `persist` with a **debounced** storage adapter so the
   per-tick simulation does not hammer `localStorage`. Metric history is kept in
   memory and bounded (`maxHistoryPoints`), and is not persisted.
 - **D3 layout is deliberately not in the store.** Node positions live in the
-  topology hook's refs/local state, so monitoring ticks never disturb the graph
-  and dragging never mutates monitoring state.
+  topology hook's state and are saved/restored from `localStorage`
+  (`netscope:topology`), so monitoring ticks never disturb the graph and dragging
+  never mutates monitoring state.
+- **Full-state backups** validate devices, incidents, events and settings
+  (settings are normalised with safe fallbacks) before a restore replaces the
+  active state.
 
 ---
 
@@ -145,15 +176,23 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-49+ unit tests cover the pure, high-value logic:
+100+ unit tests across 14 suites cover the pure, high-value logic:
 
-- seeded PRNG determinism and bounds,
+- seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
 - device filter/sort utilities,
-- JSON import validation (valid, invalid, mixed, empty) and export round-trips,
+- JSON import/backup validation (valid, invalid, mixed, empty), normalisation
+  and round-trips,
 - the simulation tick (determinism, immutability, sample/incident generation),
-- Zustand store CRUD and incident workflow,
+  incidence suppression during maintenance and incident auto-resolution,
+- CSV serialisation and escaping,
+- topology link derivation and focus-group selection,
+- Zustand store CRUD, incident workflow, full-state restore and settings,
+- notifications store read tracking,
 - component rendering (empty states, badges).
+
+Current baseline: **~78% statement coverage / ~80% line coverage** (V8 provider,
+`coverage/` output configurable via `vite.config.ts`).
 
 ---
 
@@ -170,7 +209,11 @@ The app is designed for GitHub Pages at the `/netscope/` base path.
 
 Because the app uses `HashRouter`, deep links such as
 `https://<user>.github.io/netscope/#/topology` work without any server rewrite
-rules.
+rules. Seed share links use the same pattern:
+`https://<user>.github.io/netscope/?seed=demo#/topology`.
+
+After the first visit, `/netscope/sw.js` caches the app shell and assets so the
+dashboard also loads when the browser is offline.
 
 ---
 
