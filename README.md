@@ -9,14 +9,6 @@ A modern, responsive, NOC-style network monitoring dashboard built as a fully
 static single-page app. It runs entirely on GitHub Pages with no backend, no API
 keys and no paid services.
 
-![NetScope dashboard](docs/screenshots/dashboard.png)
-![Interactive D3 topology](docs/screenshots/topology.png)
-
-> Screenshots are placeholders. Run the app locally and replace the files in
-> `docs/screenshots/` with your own captures.
-
----
-
 ## Features
 
 - **Dashboard** — device counts, availability/uptime, average latency, packet
