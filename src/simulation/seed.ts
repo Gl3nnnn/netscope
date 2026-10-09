@@ -2,6 +2,7 @@ import type { Device, DeviceInput, DeviceType } from '@/types'
 import { clamp, round } from '@/lib/format'
 import { seededId } from '@/lib/id'
 import type { Rng } from './random'
+import { TYPE_PROFILES } from './profiles'
 
 export const SITES = [
   'HQ - Floor 1',
@@ -11,18 +12,6 @@ export const SITES = [
   'Branch - West',
   'Branch - East',
 ] as const
-
-/** Baseline profiles give each simulated device a plausible personality. */
-const TYPE_PROFILES: Record<
-  DeviceType,
-  { latency: number; loss: number; throughput: number; cpu: number }
-> = {
-  router: { latency: 3, loss: 0.05, throughput: 1800, cpu: 32 },
-  switch: { latency: 1.4, loss: 0.02, throughput: 3200, cpu: 24 },
-  firewall: { latency: 6, loss: 0.08, throughput: 1200, cpu: 41 },
-  server: { latency: 12, loss: 0.1, throughput: 640, cpu: 48 },
-  accessPoint: { latency: 9, loss: 0.35, throughput: 420, cpu: 29 },
-}
 
 const NAME_PREFIX: Record<DeviceType, string> = {
   router: 'rtr',
@@ -52,7 +41,7 @@ export function makeDevice(
   now = Date.now(),
 ): Device {
   const profile = TYPE_PROFILES[partial.type]
-  const cpuBase = partial.cpuPct ?? profile.cpu + rng.noise(8)
+  const cpuBase = partial.cpuPct ?? profile.cpuPct + rng.noise(8)
   return {
     id: partial.id,
     name: partial.name,
@@ -63,17 +52,20 @@ export function makeDevice(
     mac: partial.mac ?? macFromRng(rng),
     status: partial.status ?? 'online',
     tags: partial.tags ?? [partial.type],
-    latencyMs: partial.latencyMs ?? round(profile.latency + rng.range(0, 3), 2),
+    latencyMs:
+      partial.latencyMs ?? round(profile.latencyMs + rng.range(0, 3), 2),
     packetLossPct:
       partial.packetLossPct ??
-      round(clamp(profile.loss + rng.range(0, 0.1), 0, 20), 2),
+      round(clamp(profile.packetLossPct + rng.range(0, 0.1), 0, 20), 2),
     availabilityPct:
       partial.availabilityPct ?? round(rng.range(99.5, 99.99), 3),
     throughputMbps:
       partial.throughputMbps ??
-      round(profile.throughput * rng.range(0.4, 0.9), 1),
+      round(profile.throughputMbps * rng.range(0.4, 0.9), 1),
     cpuPct: round(clamp(cpuBase, 2, 99), 1),
-    memoryPct: partial.memoryPct ?? round(rng.range(30, 78), 1),
+    memoryPct:
+      partial.memoryPct ??
+      round(clamp(profile.memoryPct + rng.noise(10), 10, 92), 1),
     uptimeSec: partial.uptimeSec ?? rng.int(3600, 60 * 60 * 24 * 90),
     lastSeen: partial.lastSeen ?? now,
   }

@@ -42,10 +42,31 @@ export function runTick(input: TickInput): TickResult {
   const events: TimelineEvent[] = []
   let devices = input.devices
 
+  const sites = [...new Set(input.devices.map((device) => device.site))]
+  const siteOutageChance = 0.02 * incidentFrequency
+
   for (let s = 0; s < steps; s += 1) {
-    const advanced = devices.map((device) =>
-      advanceDevice(device, rng, thresholds, now),
-    )
+    // Occasionally a whole site is disturbed at once, degrading every device in
+    // it and producing correlated incidents (realistic for shared uplinks).
+    const distressedSite =
+      sites.length > 0 && rng.chance(siteOutageChance) ? rng.pick(sites) : null
+    if (distressedSite) {
+      events.push({
+        id: createId('evt'),
+        timestamp: now,
+        type: 'status',
+        severity: 'high',
+        message: `Site-wide disturbance detected at ${distressedSite}`,
+      })
+    }
+
+    const advanced = devices.map((device) => {
+      const affected = distressedSite !== null && device.site === distressedSite
+      return advanceDevice(device, rng, thresholds, now, {
+        intensity: affected ? 2.5 : 1,
+        outageBoost: affected ? 6 : 0,
+      })
+    })
     devices = advanced.map((entry) => entry.device)
 
     for (const entry of advanced) {

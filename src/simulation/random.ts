@@ -48,3 +48,26 @@ export function mulberry32(seed: number): Rng {
 
   return rng
 }
+
+/**
+ * Turn an arbitrary seed string into a 32-bit unsigned integer (FNV-1a), so
+ * shareable `?seed=my-string` links still map to a deterministic RNG.
+ */
+export function hashSeed(value: string): number {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return hash >>> 0
+}
+
+/** Resolve a raw `?seed=` query value into a numeric seed (or null if absent). */
+export function seedFromParam(raw: string | null | undefined): number | null {
+  if (raw === null || raw === undefined) return null
+  const trimmed = raw.trim()
+  if (trimmed === '') return null
+  const numeric = Number(trimmed)
+  if (Number.isFinite(numeric)) return Math.abs(Math.floor(numeric)) >>> 0
+  return hashSeed(trimmed)
+}

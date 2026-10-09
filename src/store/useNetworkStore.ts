@@ -3,13 +3,14 @@ import { persist } from 'zustand/middleware'
 import type {
   Device,
   DeviceInput,
+  DeviceStatus,
   Incident,
   MetricSample,
   TimelineEvent,
 } from '@/types'
 import { createId } from '@/lib/id'
 import { round, clamp } from '@/lib/format'
-import { mulberry32, type Rng } from '@/simulation/random'
+import { mulberry32, seedFromParam, type Rng } from '@/simulation/random'
 import { buildSeedDevices, deviceFromInput } from '@/simulation/seed'
 import { runTick } from '@/simulation/engine'
 import {
@@ -24,8 +25,37 @@ import { useSettingsStore } from './useSettingsStore'
 const BASE_SEED = 0x5eed1234
 const MAX_EVENTS = 500
 const MAX_INCIDENTS = 200
+const FLAP_WINDOW = 8
+const FLAP_MIN_TRANSITIONS = 4
 
-let rng: Rng = mulberry32(BASE_SEED)
+/** Resolve a shareable `?seed=` query param (before the hash route). */
+function readSeed(): number {
+  if (typeof window === 'undefined') return BASE_SEED
+  const raw = new URLSearchParams(window.location.search).get('seed')
+  return seedFromParam(raw) ?? BASE_SEED
+}
+
+const ACTIVE_SEED = readSeed()
+let rng: Rng = mulberry32(ACTIVE_SEED)
+
+/** Rolling per-device status history used to detect flapping. */
+const statusHistory = new Map<string, DeviceStatus[]>()
+
+function trackFlapping(devices: Device[]): Device[] {
+  return devices.map((device) => {
+    const history = statusHistory.get(device.id) ?? []
+    history.push(device.status)
+    if (history.length > FLAP_WINDOW) history.shift()
+    statusHistory.set(device.id, history)
+
+    let transitions = 0
+    for (let i = 1; i < history.length; i += 1) {
+      if (history[i] !== history[i - 1]) transitions += 1
+    }
+    const flapping = transitions >= FLAP_MIN_TRANSITIONS
+    return device.flapping === flapping ? device : { ...device, flapping }
+  })
+}
 
 export interface NetworkState {
   devices: Device[]
@@ -34,6 +64,8 @@ export interface NetworkState {
   history: Record<string, MetricSample[]>
   lastTick: number
   initialized: boolean
+  /** The seed driving this session (from `?seed=` or the default). */
+  seed: number
 
   initialize: () => void
   tick: () => void
@@ -115,6 +147,7 @@ export const useNetworkStore = create<NetworkState>()(
       history: {},
       lastTick: 0,
       initialized: false,
+      seed: ACTIVE_SEED,
 
       initialize: () => {
         if (get().initialized) return
@@ -122,7 +155,8 @@ export const useNetworkStore = create<NetworkState>()(
         let { devices, incidents, events } = get()
 
         if (devices.length === 0) {
-          rng = mulberry32(BASE_SEED)
+          rng = mulberry32(ACTIVE_SEED)
+          statusHistory.clear()
           devices = buildSeedDevices(rng, now)
           incidents = []
           events = [bootEvent(now)]
@@ -171,7 +205,7 @@ export const useNetworkStore = create<NetworkState>()(
               next.length > max ? next.slice(next.length - max) : next
           }
           return {
-            devices: result.devices,
+            devices: trackFlapping(result.devices),
             incidents: result.incidents.slice(0, MAX_INCIDENTS),
             events: boundEvents([...result.events, ...state.events]),
             history,
@@ -368,7 +402,8 @@ export const useNetworkStore = create<NetworkState>()(
 
       resetDemo: () => {
         const now = Date.now()
-        rng = mulberry32(BASE_SEED)
+        rng = mulberry32(ACTIVE_SEED)
+        statusHistory.clear()
         const devices = buildSeedDevices(rng, now)
         const settings = useSettingsStore.getState()
         set({
@@ -383,6 +418,7 @@ export const useNetworkStore = create<NetworkState>()(
             now,
           ),
           lastTick: now,
+          seed: ACTIVE_SEED,
           initialized: true,
         })
       },

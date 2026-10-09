@@ -2,37 +2,80 @@ import type { Device, Thresholds } from '@/types'
 import { clamp, round } from '@/lib/format'
 import { deriveStatus } from '@/lib/health'
 import type { Rng } from './random'
+import { profileFor } from './profiles'
 
 export interface AdvancedDevice {
   device: Device
   statusChanged: boolean
 }
 
+export interface AdvanceOptions {
+  /** Scales random-walk spread and spike/outage probability. */
+  intensity?: number
+  /** Extra outage pressure (e.g. during a simulated site-wide disturbance). */
+  outageBoost?: number
+}
+
 /**
- * Advance a single device's simulated telemetry by one step using a random
- * walk around its current values. Pure aside from the injected RNG.
+ * Advance a single device's simulated telemetry by one step.
+ *
+ * Values mean-revert toward the device type's baseline profile (from
+ * `profiles.ts`) while a random walk adds noise. Pure aside from the injected
+ * RNG, so the whole simulation stays deterministic and unit testable.
  */
 export function advanceDevice(
   device: Device,
   rng: Rng,
   thresholds: Thresholds,
   now: number,
-  intensity = 1,
+  options: AdvanceOptions = {},
 ): AdvancedDevice {
-  const drift = (value: number, spread: number, min: number, max: number) =>
-    clamp(value + rng.noise(spread) * intensity, min, max)
+  const { intensity = 1, outageBoost = 0 } = options
+  const profile = profileFor(device.type)
+  const volatility = profile.volatility * intensity
+
+  const walk = (
+    value: number,
+    baseline: number,
+    spread: number,
+    min: number,
+    max: number,
+  ) =>
+    clamp(
+      value + (baseline - value) * 0.08 + rng.noise(spread) * volatility,
+      min,
+      max,
+    )
+
+  let latency = walk(device.latencyMs, profile.latencyMs, 0.8, 0.4, 400)
+  let loss = walk(device.packetLossPct, profile.packetLossPct, 0.15, 0, 40)
+  let availability = walk(device.availabilityPct, 99.9, 0.05, 80, 100)
+  const throughput = walk(
+    device.throughputMbps,
+    profile.throughputMbps,
+    25,
+    10,
+    9000,
+  )
+  let cpu = walk(device.cpuPct, profile.cpuPct, 2.5, 2, 100)
+  const memory = walk(device.memoryPct, profile.memoryPct, 1.6, 10, 99)
+
+  // Simulated maintenance windows occasionally take a device out of the
+  // incident stream while it is being worked on.
+  let inMaintenance = device.inMaintenance ?? false
+  if (inMaintenance) {
+    if (rng.chance(0.06)) inMaintenance = false
+  } else if (rng.chance(0.0006 * intensity)) {
+    inMaintenance = true
+  }
 
   // Occasional events create realistic spikes / outages.
-  const spiking = rng.chance(0.04 * intensity)
-  const outageChance = device.status === 'offline' ? 0.25 : 0.004
+  const spiking = !inMaintenance && rng.chance(0.04 * intensity)
+  const outageChance =
+    (device.status === 'offline' ? 0.25 : 0.004) *
+    (1 + outageBoost) *
+    (inMaintenance ? 0.15 : 1)
   const recovering = device.status === 'offline' && rng.chance(0.45)
-
-  let latency = drift(device.latencyMs, 0.8, 0.4, 400)
-  let loss = drift(device.packetLossPct, 0.15, 0, 40)
-  let availability = drift(device.availabilityPct, 0.05, 80, 100)
-  const throughput = drift(device.throughputMbps, 25, 10, 9000)
-  let cpu = drift(device.cpuPct, 2.5, 2, 100)
-  const memory = drift(device.memoryPct, 1.6, 10, 99)
 
   if (spiking) {
     latency *= rng.range(1.8, 4.5)
@@ -65,6 +108,7 @@ export function advanceDevice(
     throughputMbps: round(throughput, 1),
     cpuPct: round(cpu, 1),
     memoryPct: round(memory, 1),
+    inMaintenance,
     uptimeSec:
       status === 'offline' ? 0 : device.uptimeSec + Math.round(rng.range(1, 3)),
     lastSeen: status === 'offline' ? device.lastSeen : now,

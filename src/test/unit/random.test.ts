@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mulberry32 } from '../../simulation/random'
+import { hashSeed, mulberry32, seedFromParam } from '../../simulation/random'
 
 describe('mulberry32 PRNG', () => {
   it('is deterministic for the same seed', () => {
@@ -48,5 +48,41 @@ describe('mulberry32 PRNG', () => {
 
   it('throws when picking from an empty array', () => {
     expect(() => mulberry32(1).pick([])).toThrow()
+  })
+})
+
+describe('seedFromParam', () => {
+  it('returns null when the parameter is absent or empty', () => {
+    expect(seedFromParam(null)).toBeNull()
+    expect(seedFromParam(undefined)).toBeNull()
+    expect(seedFromParam('')).toBeNull()
+    expect(seedFromParam('   ')).toBeNull()
+  })
+
+  it('parses numeric seeds', () => {
+    expect(seedFromParam('42')).toBe(42)
+    expect(seedFromParam('0')).toBe(0)
+  })
+
+  it('normalises negative numbers into the unsigned range', () => {
+    const value = seedFromParam('-7')
+    expect(value).toBe(7)
+  })
+
+  it('hashes arbitrary strings deterministically', () => {
+    expect(seedFromParam('demo')).toBe(seedFromParam('demo'))
+    expect(seedFromParam('demo')).not.toBe(seedFromParam('demo2'))
+  })
+})
+
+describe('hashSeed', () => {
+  it('is stable across calls and returns an unsigned integer', () => {
+    expect(hashSeed('hello')).toBe(hashSeed('hello'))
+    expect(Number.isInteger(hashSeed('hello'))).toBe(true)
+    expect(hashSeed('hello')).toBeGreaterThanOrEqual(0)
+  })
+
+  it('handles the empty string', () => {
+    expect(hashSeed('')).toBe(0x811c9dc5)
   })
 })

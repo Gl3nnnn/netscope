@@ -44,6 +44,7 @@ export function generateIncidents(params: {
   if (frequency <= 0) return { incidents: created, events }
 
   for (const device of devices) {
+    if (device.inMaintenance) continue
     if (activeIncidentForDevice([...incidents, ...created], device.id)) continue
 
     const score = computeHealthScore(device, thresholds)

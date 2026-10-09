@@ -3,6 +3,7 @@ import {
   Database,
   Download,
   Gauge,
+  Link2,
   Moon,
   Palette,
   RefreshCw,
@@ -44,6 +45,7 @@ export function SettingsPage() {
   const importDevices = useNetworkStore((state) => state.importDevices)
   const resetDemo = useNetworkStore((state) => state.resetDemo)
   const deviceCount = useNetworkStore((state) => state.devices.length)
+  const seed = useNetworkStore((state) => state.seed)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -76,6 +78,16 @@ export function SettingsPage() {
       toast.error('Import failed', {
         description: 'The file could not be read.',
       })
+    }
+  }
+
+  const handleCopyShareLink = async () => {
+    const url = `${window.location.origin}${window.location.pathname}?seed=${seed}#/`
+    try {
+      await navigator.clipboard.writeText(url)
+      toast.success('Share link copied')
+    } catch {
+      toast.error('Could not copy the share link')
     }
   }
 
@@ -282,6 +294,31 @@ export function SettingsPage() {
                 settings.setThreshold('availabilityPct', value)
               }
             />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Link2 className="size-4 text-primary" /> Share simulation
+            </CardTitle>
+            <CardDescription>
+              Reproduce this exact DEMO fleet via a shareable seed.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Current seed:{' '}
+              <span className="font-mono text-foreground">{seed}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Anyone opening the copied link sees the same seeded topology. The
+              seeded RNG keeps simulated telemetry deterministic in this browser
+              session.
+            </p>
+            <Button variant="outline" size="sm" onClick={handleCopyShareLink}>
+              <Link2 className="size-4" /> Copy share link
+            </Button>
           </CardContent>
         </Card>
 
