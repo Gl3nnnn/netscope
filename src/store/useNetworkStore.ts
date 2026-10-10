@@ -12,6 +12,7 @@ import type {
 } from '@/types'
 import { createId } from '@/lib/id'
 import { round, clamp } from '@/lib/format'
+import { recoverDevice } from '@/lib/devices'
 import { mulberry32, seedFromParam, type Rng } from '@/simulation/random'
 import { buildSeedDevices, deviceFromInput } from '@/simulation/seed'
 import { runTick } from '@/simulation/engine'
@@ -96,6 +97,7 @@ export interface NetworkState {
   restoreBackup: (payload: BackupPayload) => void
   acknowledgeIncident: (id: string) => void
   resolveIncident: (id: string) => void
+  runRemediation: (id: string) => void
   clearResolvedIncidents: () => void
   clearEvents: () => void
   pushEvent: (event: Omit<TimelineEvent, 'id'>) => void
@@ -549,6 +551,56 @@ export const useNetworkStore = create<NetworkState>()(
         set((state) => ({
           incidents: state.incidents.filter((i) => i.status !== 'resolved'),
         })),
+
+      runRemediation: (id) => {
+        const now = Date.now()
+        set((state) => {
+          const incident = state.incidents.find((item) => item.id === id)
+          if (!incident || incident.status === 'resolved') return state
+
+          const targets = new Set(incident.deviceIds)
+          const sites = new Set(
+            state.devices
+              .filter((device) => targets.has(device.id))
+              .map((device) => device.site),
+          )
+          const faults = state.faults.filter(
+            (fault) =>
+              !targets.has(fault.target) &&
+              !(fault.kind === 'site-outage' && sites.has(fault.target)),
+          )
+          const recovered = state.faults.length - faults.length
+          const devices = state.devices.map((device) =>
+            targets.has(device.id) ? recoverDevice(device, now) : device,
+          )
+
+          return {
+            devices,
+            faults,
+            incidents: state.incidents.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    status: 'resolved',
+                    resolvedAt: now,
+                    updatedAt: now,
+                  }
+                : item,
+            ),
+            events: boundEvents([
+              {
+                id: createId('evt'),
+                timestamp: now,
+                type: 'incident',
+                severity: incident.severity,
+                deviceId: incident.deviceIds[0],
+                message: `Runbook applied to "${incident.title}": restored ${targets.size} device(s)${recovered > 0 ? `, cleared ${recovered} fault(s)` : ''}.`,
+              },
+              ...state.events,
+            ]),
+          }
+        })
+      },
 
       clearEvents: () => set({ events: [] }),
 

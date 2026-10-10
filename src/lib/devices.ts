@@ -64,3 +64,24 @@ export function sortDevices(
 export function deviceSites(devices: Device[]): string[] {
   return [...new Set(devices.map((device) => device.site))].sort()
 }
+
+/**
+ * Reset a device to a clean, healthy snapshot. Used by remediation runbooks to
+ * bring a faulted device back online immediately instead of waiting for the
+ * random walk to recover it. Pure, so it is easy to unit test.
+ */
+export function recoverDevice(device: Device, now: number): Device {
+  return {
+    ...device,
+    status: 'online',
+    latencyMs: 4,
+    packetLossPct: 0,
+    availabilityPct: 100,
+    cpuPct: Math.min(device.cpuPct, 15),
+    memoryPct: Math.min(device.memoryPct, 25),
+    inMaintenance: false,
+    flapping: false,
+    uptimeSec: 0,
+    lastSeen: now,
+  }
+}

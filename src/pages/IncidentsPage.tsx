@@ -6,6 +6,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   Waypoints,
+  Wrench,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Incident, Severity } from '@/types'
@@ -25,6 +26,7 @@ import {
 } from '@/components/ui/select'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { buildGraph, correlateRootCause } from '@/lib/dependency'
+import { runbookForIncident } from '@/lib/runbooks'
 import { SEVERITY_LABELS } from '@/lib/health'
 import { formatDateTime, formatRelativeTime } from '@/lib/format'
 import { elapsedMs, formatAge } from '@/lib/time'
@@ -40,11 +42,13 @@ const STATUS_VARIANT = {
 export function IncidentsPage() {
   const incidents = useNetworkStore((state) => state.incidents)
   const devices = useNetworkStore((state) => state.devices)
+  const faults = useNetworkStore((state) => state.faults)
   const now = useNetworkStore((state) => state.lastTick)
   const acknowledgeIncident = useNetworkStore(
     (state) => state.acknowledgeIncident,
   )
   const resolveIncident = useNetworkStore((state) => state.resolveIncident)
+  const runRemediation = useNetworkStore((state) => state.runRemediation)
   const clearResolvedIncidents = useNetworkStore(
     (state) => state.clearResolvedIncidents,
   )
@@ -113,87 +117,124 @@ export function IncidentsPage() {
     </div>
   )
 
-  const renderIncident = (incident: Incident) => (
-    <Card key={incident.id}>
-      <CardContent className="space-y-3 p-4">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div className="min-w-0 space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="font-medium">{incident.title}</p>
-              <Badge
-                variant={STATUS_VARIANT[incident.status]}
-                className="capitalize"
-              >
-                {incident.status}
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {incident.description}
-            </p>
-          </div>
-          <SeverityBadge severity={incident.severity} />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <span>Affected:</span>
-          {incident.deviceIds.map((id) => (
-            <Badge key={id} variant="outline">
-              {deviceName.get(id) ?? 'Deleted device'}
-            </Badge>
-          ))}
-        </div>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-          <div className="space-y-0.5">
-            <p>Opened {formatDateTime(incident.createdAt)}</p>
-            {incident.status !== 'resolved' ? (
-              <p>Open for {formatAge(elapsedMs(incident.createdAt, now))}</p>
-            ) : null}
-            <p>Updated {formatRelativeTime(incident.updatedAt)}</p>
-            {incident.acknowledgedAt ? (
-              <p>Acknowledged {formatRelativeTime(incident.acknowledgedAt)}</p>
-            ) : null}
-            {incident.resolvedAt ? (
-              <p>
-                Resolved after{' '}
-                {formatAge(elapsedMs(incident.createdAt, incident.resolvedAt))}
+  const renderIncident = (incident: Incident) => {
+    const runbook = runbookForIncident({ incident, devices, faults, now })
+    return (
+      <Card key={incident.id}>
+        <CardContent className="space-y-3 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">{incident.title}</p>
+                <Badge
+                  variant={STATUS_VARIANT[incident.status]}
+                  className="capitalize"
+                >
+                  {incident.status}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {incident.description}
               </p>
-            ) : null}
+            </div>
+            <SeverityBadge severity={incident.severity} />
           </div>
 
-          {incident.status !== 'resolved' ? (
-            <div className="flex gap-2">
-              {incident.status === 'open' ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            <span>Affected:</span>
+            {incident.deviceIds.map((id) => (
+              <Badge key={id} variant="outline">
+                {deviceName.get(id) ?? 'Deleted device'}
+              </Badge>
+            ))}
+          </div>
+
+          <details className="group rounded-md border border-border/60 bg-muted/20 px-3 py-2">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Wrench className="size-3.5" />
+              Runbook: {runbook.title}
+              <span className="ml-auto text-[11px] text-muted-foreground/70 group-open:hidden">
+                show steps
+              </span>
+            </summary>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {runbook.summary}
+            </p>
+            <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs text-muted-foreground">
+              {runbook.steps.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ol>
+          </details>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+            <div className="space-y-0.5">
+              <p>Opened {formatDateTime(incident.createdAt)}</p>
+              {incident.status !== 'resolved' ? (
+                <p>Open for {formatAge(elapsedMs(incident.createdAt, now))}</p>
+              ) : null}
+              <p>Updated {formatRelativeTime(incident.updatedAt)}</p>
+              {incident.acknowledgedAt ? (
+                <p>
+                  Acknowledged {formatRelativeTime(incident.acknowledgedAt)}
+                </p>
+              ) : null}
+              {incident.resolvedAt ? (
+                <p>
+                  Resolved after{' '}
+                  {formatAge(
+                    elapsedMs(incident.createdAt, incident.resolvedAt),
+                  )}
+                </p>
+              ) : null}
+            </div>
+
+            {incident.status !== 'resolved' ? (
+              <div className="flex gap-2">
+                {runbook.autoRemediable ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      runRemediation(incident.id)
+                      toast.success(`Runbook applied: ${runbook.title}`)
+                    }}
+                  >
+                    <Wrench className="size-4" /> Apply runbook
+                  </Button>
+                ) : null}
+                {incident.status === 'open' ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      acknowledgeIncident(incident.id)
+                      toast.success('Incident acknowledged')
+                    }}
+                  >
+                    <CheckCheck className="size-4" /> Acknowledge
+                  </Button>
+                ) : null}
                 <Button
-                  variant="outline"
                   size="sm"
                   onClick={() => {
-                    acknowledgeIncident(incident.id)
-                    toast.success('Incident acknowledged')
+                    resolveIncident(incident.id)
+                    toast.success('Incident resolved')
                   }}
                 >
-                  <CheckCheck className="size-4" /> Acknowledge
+                  <CircleCheck className="size-4" /> Resolve
                 </Button>
-              ) : null}
-              <Button
-                size="sm"
-                onClick={() => {
-                  resolveIncident(incident.id)
-                  toast.success('Incident resolved')
-                }}
-              >
-                <CircleCheck className="size-4" /> Resolve
-              </Button>
-            </div>
-          ) : (
-            <Badge variant="success" className="gap-1">
-              <ShieldCheck className="size-3" /> Resolved
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
+              </div>
+            ) : (
+              <Badge variant="success" className="gap-1">
+                <ShieldCheck className="size-3" /> Resolved
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-5">
