@@ -12,8 +12,8 @@ keys and no paid services.
 ## Features
 
 - **Dashboard** — device counts, availability/uptime, average latency, packet
-  loss and a composite health score, plus live area/line/bar/donut charts and a
-  recent-incidents feed.
+  loss and a composite health score, plus live area/line/bar/donut charts, ▲/▼
+  **trend deltas** on the fleet KPI cards and a recent-incidents feed.
 - **Network Topology** — an interactive D3 force-directed map with zoom, pan,
   draggable nodes, search, type/status filters, a legend and a device detail
   panel. **Site hulls** group devices per location, animated link dashes reflect
@@ -22,20 +22,27 @@ keys and no paid services.
   (`netscope:topology`), so the layout survives reloads.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
-  changes. Each device has its own **detail route** (`/#/devices/:id`) with live
-  stats, history charts, incidents and activity.
+  changes. Filters are reflected in the URL (`/devices?site=…`) so views are
+  shareable. Each device has its own **detail route** (`/#/devices/:id`) with live
+  stats, per-device **trend deltas**, a dashed **P95 reference line**, history
+  charts, incidents and activity.
 - **Performance** — per-device CPU, memory, throughput, latency, packet-loss and
   availability charts with summary statistics and a time-window control.
 - **SLA & Uptime** — MTTA/MTTR, fleet/site uptime vs targets, incidents by
   severity and devices falling below the 99.9% target.
 - **Incidents** — severity levels, affected devices, timestamps, an
   acknowledgement → resolution workflow, auto-resolution and a resolved history.
-  New incidents can raise **browser notifications**.
+  New incidents raise **browser notifications** and **in-app toasts**.
+- **Fault simulator** — press `F` to open a chaos playboard that injects
+  transient faults: force a device offline or **saturate** it near capacity,
+  or sever a whole site. Faults flow through the same metric walk as organic
+  events, open correlated incidents and auto-expire on your chosen timer.
 - **Event Timeline** — a chronological feed of device status changes, incident
   activity, inventory and configuration events.
-- **Command palette** — press `Ctrl/Cmd+K` for quick navigation and actions;
-  `?` opens keyboard-shortcut help, `T` toggles the theme and `P` toggles the
-  simulation.
+- **Command palette** — press `Ctrl/Cmd+K` to fuzzy-search **devices, sites and
+  incidents** as well as pages and actions; `?` opens keyboard-shortcut help, `T`
+  toggles the theme, `P` toggles the simulation and `F` toggles the fault
+  simulator.
 - **Settings** — theme, simulation controls (run/pause, speed, refresh interval,
   incident frequency), degradation thresholds and history bounds, plus
   **full-state backup/restore** (JSON) and **CSV export** of the inventory and
@@ -50,6 +57,27 @@ keys and no paid services.
   keyboard operability, skip-to-content, `prefers-reduced-motion` support,
   accessible Radix primitives, loading skeletons, empty states and error
   boundaries.
+
+---
+
+## Demo walkthrough (10 minutes)
+
+A suggested tour for reviewers. No setup is required — every value is simulated
+in the browser.
+
+| Time       | Stop                | What to show                                                                                                                                                          |
+| ---------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0:00–1:30  | **Dashboard**       | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                      |
+| 1:30–3:00  | **Command palette** | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                     |
+| 3:00–4:30  | **Device detail**   | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                   |
+| 4:30–6:00  | **Performance**     | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, with a capacity/headroom summary.                                          |
+| 6:00–8:00  | **Fault simulator** | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover. |
+| 8:00–9:00  | **Incidents & SLA** | Acknowledge then resolve an incident; review MTTA/MTTR and uptime against target on the SLA page.                                                                     |
+| 9:00–9:45  | **Topology**        | Pan/zoom the D3 map, drag nodes, and use focus (ego) mode to isolate a node and its neighbours.                                                                       |
+| 9:45–10:00 | **Backup & reset**  | In Settings export a full-state backup, then **Reset demo** to reseed the fleet.                                                                                      |
+
+Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
+`F` fault simulator.
 
 ---
 
@@ -139,6 +167,9 @@ src/
 - A **health score** (0–100) blends latency, loss, availability and CPU. Incidents
   are generated from threshold breaches with a controllable frequency, then
   acknowledged/resolved manually or auto-resolved on recovery.
+- The **fault simulator** injects transient, user-driven faults (offline,
+  saturation, site outage) that are **never persisted**; they flow through the
+  same metric walk as organic events and expire on their timer.
 - `runTick()` is a pure function: given devices, thresholds and an RNG it returns
   the next state, samples and events.
 
@@ -168,22 +199,28 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-100+ unit tests across 14 suites cover the pure, high-value logic:
+160+ unit tests across 21 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
 - device filter/sort utilities,
+- capacity profiles, the daily traffic curve and utilisation helpers,
+- Welford z-score **anomaly detection** and nearest-rank **percentiles**,
+- metric **trend** deltas and series windows,
+- elapsed-time/age formatting,
+- **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation
-  and round-trips,
+  and round-trips, including per-device **history** coercion,
 - the simulation tick (determinism, immutability, sample/incident generation),
-  incidence suppression during maintenance and incident auto-resolution,
+  incidence suppression during maintenance, incident auto-resolution and
+  **injected faults**,
 - CSV serialisation and escaping,
 - topology link derivation and focus-group selection,
-- Zustand store CRUD, incident workflow, full-state restore and settings,
+- Zustand store CRUD, incident workflow, full-state restore, faults and settings,
 - notifications store read tracking,
 - component rendering (empty states, badges).
 
-Current baseline: **~78% statement coverage / ~80% line coverage** (V8 provider,
+Current baseline: **~83% statement coverage / ~86% line coverage** (V8 provider,
 `coverage/` output configurable via `vite.config.ts`).
 
 ---
