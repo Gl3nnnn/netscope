@@ -1,12 +1,19 @@
 import { useMemo, useState } from 'react'
-import { CheckCheck, CircleCheck, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import {
+  CheckCheck,
+  CircleCheck,
+  ShieldAlert,
+  ShieldCheck,
+  Waypoints,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import type { Incident, Severity } from '@/types'
 import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import { SeverityBadge } from '@/components/common/Badges'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -17,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useNetworkStore } from '@/store/useNetworkStore'
+import { buildGraph, correlateRootCause } from '@/lib/dependency'
 import { SEVERITY_LABELS } from '@/lib/health'
 import { formatDateTime, formatRelativeTime } from '@/lib/format'
 import { elapsedMs, formatAge } from '@/lib/time'
@@ -47,6 +55,21 @@ export function IncidentsPage() {
     () => new Map(devices.map((device) => [device.id, device.name])),
     [devices],
   )
+
+  const impacted = useMemo(
+    () => devices.filter((device) => device.status !== 'online'),
+    [devices],
+  )
+
+  const rootCauses = useMemo(() => {
+    if (impacted.length === 0) return []
+    return correlateRootCause({
+      devices,
+      graph: buildGraph(devices),
+      affected: impacted.map((device) => device.id),
+      limit: 3,
+    })
+  }, [devices, impacted])
 
   const filter = (list: Incident[]) =>
     list
@@ -179,6 +202,47 @@ export function IncidentsPage() {
         description="Simulated incidents with acknowledgement and resolution workflow."
         actions={severityFilter}
       />
+
+      {rootCauses.length > 0 ? (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Waypoints className="size-4 text-amber-500" />
+              Probable root cause
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Ranked by how much of the {impacted.length} impacted device
+              {impacted.length === 1 ? '' : 's'} sit inside each node&apos;s
+              downstream blast radius.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {rootCauses.map((cause, index) => (
+              <div
+                key={cause.deviceId}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 bg-card/60 px-3 py-2"
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-xs font-semibold text-amber-500">
+                    {index + 1}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {deviceName.get(cause.deviceId) ?? cause.deviceId}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {cause.evidence[0]}
+                    </p>
+                  </div>
+                </div>
+                <Button asChild variant="outline" size="sm">
+                  <Link to={`/devices/${cause.deviceId}`}>Inspect</Link>
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Tabs defaultValue="active">
         <TabsList>

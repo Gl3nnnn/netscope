@@ -57,6 +57,7 @@ import {
 import { percentile } from '@/lib/percentile'
 import { seriesTrend, trendLabel } from '@/lib/trend'
 import { saturationForecast } from '@/lib/forecast'
+import { buildGraph, impactedDeviceCount } from '@/lib/dependency'
 import { SATURATION_THRESHOLD_PCT } from '@/lib/capacity'
 import type { Severity } from '@/types'
 
@@ -189,6 +190,16 @@ export function DashboardPage() {
         .slice(0, 5),
     [devices],
   )
+
+  const blastCounts = useMemo(() => {
+    const graph = buildGraph(devices)
+    return new Map(
+      devices.map((device) => [
+        device.id,
+        impactedDeviceCount(graph, device.id),
+      ]),
+    )
+  }, [devices])
 
   const forecasts = useMemo(
     () =>
@@ -586,6 +597,11 @@ export function DashboardPage() {
                     <p className="truncate text-xs text-muted-foreground">
                       {DEVICE_TYPE_LABELS[device.type]} - {device.site}
                     </p>
+                    {(blastCounts.get(device.id) ?? 0) > 0 ? (
+                      <p className="mt-0.5 text-xs text-amber-500">
+                        takes down {blastCounts.get(device.id)} downstream
+                      </p>
+                    ) : null}
                   </div>
                   <div className="text-right text-xs">
                     <p className="font-mono">{round(device.latencyMs, 1)} ms</p>

@@ -36,6 +36,7 @@ interface TopologyCanvasProps {
   links: TopoLink[]
   selectedId: string | null
   onSelect: (device: Device) => void
+  blastIds?: string[]
 }
 
 export function TopologyCanvas({
@@ -43,6 +44,7 @@ export function TopologyCanvas({
   links,
   selectedId,
   onSelect,
+  blastIds,
 }: TopologyCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
@@ -282,6 +284,8 @@ export function TopologyCanvas({
             const Icon = TYPE_ICON[device.type]
             const selected = device.id === selectedId
             const color = STATUS_HEX[device.status]
+            const inBlast =
+              !selected && (blastIds?.includes(device.id) ?? false)
             const dimmed = focusMode && ego ? !ego.has(device.id) : false
             return (
               <g
@@ -321,6 +325,16 @@ export function TopologyCanvas({
                     stroke="hsl(199 89% 55%)"
                     strokeWidth={2}
                     strokeDasharray="4 3"
+                  />
+                ) : null}
+                {inBlast ? (
+                  <circle
+                    r={radius + 7}
+                    fill="none"
+                    stroke="#f59e0b"
+                    strokeWidth={1.5}
+                    strokeDasharray="2 3"
+                    opacity={0.85}
                   />
                 ) : null}
                 <circle

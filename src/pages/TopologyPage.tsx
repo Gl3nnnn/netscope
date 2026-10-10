@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TopologyCanvas } from '@/components/topology/TopologyCanvas'
 import { deriveLinks, NODE_RADIUS } from '@/components/topology/topology'
+import { blastRadius, buildGraph } from '@/lib/dependency'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import {
   DEVICE_STATUS_LABELS,
@@ -64,9 +65,21 @@ export function TopologyPage() {
 
   const links = useMemo(() => deriveLinks(filtered), [filtered])
 
+  const graph = useMemo(() => buildGraph(filtered, links), [filtered, links])
+
   const selectedLive = selected
     ? (devices.find((device) => device.id === selected.id) ?? selected)
     : null
+
+  const blast = useMemo(
+    () => (selectedLive ? blastRadius(graph, selectedLive.id) : []),
+    [graph, selectedLive],
+  )
+
+  const blastNames = useMemo(() => {
+    const byId = new Map(filtered.map((device) => [device.id, device.name]))
+    return blast.map((id) => byId.get(id) ?? id)
+  }, [blast, filtered])
 
   return (
     <div className="space-y-5">
@@ -155,6 +168,7 @@ export function TopologyPage() {
             devices={filtered}
             links={links}
             selectedId={selectedLive?.id ?? null}
+            blastIds={blast}
             onSelect={setSelected}
           />
         )}
@@ -237,6 +251,27 @@ export function TopologyPage() {
                     ))}
                   </div>
                 ) : null}
+
+                <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2.5">
+                  <p className="text-[11px] uppercase tracking-wide text-amber-500/90">
+                    Downstream impact
+                  </p>
+                  {blast.length === 0 ? (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Leaf node - no dependent devices in its blast radius.
+                    </p>
+                  ) : (
+                    <>
+                      <p className="mt-1 text-sm">
+                        {blast.length} device
+                        {blast.length === 1 ? '' : 's'} depend on this node
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {blastNames.join(', ')}
+                      </p>
+                    </>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span
