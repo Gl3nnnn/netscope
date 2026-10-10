@@ -23,11 +23,13 @@ keys and no paid services.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
-  shareable. Each device has its own **detail route** (`/#/devices/:id`) with live
-  stats, per-device **trend deltas**, a dashed **P95 reference line**, history
-  charts, incidents and activity.
+  shareable, and each row shows a colour-coded **latency sparkline**. Each device
+  has its own **detail route** (`/#/devices/:id`) with live stats, per-device
+  **trend deltas**, a dashed **P95 reference line**, history charts, incidents and
+  activity.
 - **Performance** — per-device CPU, memory, throughput, latency, packet-loss and
-  availability charts with summary statistics and a time-window control.
+  availability charts with summary statistics, a time-window control, and a
+  **read-only history replay scrubber** that previews any retained sample.
 - **SLA & Uptime** — MTTA/MTTR, fleet/site uptime vs targets, incidents by
   severity and devices falling below the 99.9% target.
 - **Incidents** — severity levels, affected devices, timestamps, an
@@ -70,7 +72,7 @@ in the browser.
 | 0:00–1:30  | **Dashboard**       | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                      |
 | 1:30–3:00  | **Command palette** | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                     |
 | 3:00–4:30  | **Device detail**   | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                   |
-| 4:30–6:00  | **Performance**     | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, with a capacity/headroom summary.                                          |
+| 4:30–6:00  | **Performance**     | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                    |
 | 6:00–8:00  | **Fault simulator** | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover. |
 | 8:00–9:00  | **Incidents & SLA** | Acknowledge then resolve an incident; review MTTA/MTTR and uptime against target on the SLA page.                                                                     |
 | 9:00–9:45  | **Topology**        | Pan/zoom the D3 map, drag nodes, and use focus (ego) mode to isolate a node and its neighbours.                                                                       |
@@ -199,13 +201,14 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-160+ unit tests across 21 suites cover the pure, high-value logic:
+160+ unit tests across 22 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
 - device filter/sort utilities,
 - capacity profiles, the daily traffic curve and utilisation helpers,
-- Welford z-score **anomaly detection** and nearest-rank **percentiles**,
+- Welford z-score **anomaly detection**, nearest-rank **percentiles** and
+  sparkline geometry,
 - metric **trend** deltas and series windows,
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),

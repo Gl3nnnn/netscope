@@ -17,6 +17,7 @@ import { PageHeader } from '@/components/common/PageHeader'
 import { EmptyState } from '@/components/common/EmptyState'
 import { StatusBadge } from '@/components/common/Badges'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { Sparkline } from '@/components/charts/Sparkline'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -71,6 +72,7 @@ interface SortState {
 
 export function DevicesPage() {
   const devices = useNetworkStore((state) => state.devices)
+  const history = useNetworkStore((state) => state.history)
   const addDevice = useNetworkStore((state) => state.addDevice)
   const updateDevice = useNetworkStore((state) => state.updateDevice)
   const deleteDevice = useNetworkStore((state) => state.deleteDevice)
@@ -386,6 +388,7 @@ export function DevicesPage() {
                   sort={sort}
                   onSort={toggleSort}
                 />
+                <TableHead>Trend</TableHead>
                 <SortableHead
                   label="CPU"
                   sortKey="cpuPct"
@@ -424,6 +427,21 @@ export function DevicesPage() {
                   </TableCell>
                   <TableCell className="font-mono tabular-nums">
                     {round(device.availabilityPct, 3)}%
+                  </TableCell>
+                  <TableCell>
+                    <Sparkline
+                      data={(history[device.id] ?? []).map(
+                        (sample) => sample.latencyMs,
+                      )}
+                      label={`Latency trend for ${device.name}`}
+                      stroke={
+                        device.status === 'offline'
+                          ? '#f43f5e'
+                          : device.status === 'degraded'
+                            ? '#fbbf24'
+                            : '#34d399'
+                      }
+                    />
                   </TableCell>
                   <TableCell className="font-mono tabular-nums">
                     {round(device.cpuPct, 0)}%

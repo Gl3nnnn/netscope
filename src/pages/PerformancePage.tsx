@@ -7,6 +7,7 @@ import {
   Line,
   LineChart,
   ReferenceDot,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -25,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { Slider } from '@/components/ui/slider'
 import { ChartCard } from '@/components/charts/ChartCard'
 import { ChartTooltip } from '@/components/charts/ChartTooltip'
 import { useNetworkStore } from '@/store/useNetworkStore'
@@ -76,6 +78,7 @@ export function PerformancePage() {
   const history = useNetworkStore((state) => state.history)
   const [deviceId, setDeviceId] = useState<string>('fleet')
   const [window, setWindow] = useState<string>('60')
+  const [scrubOffset, setScrubOffset] = useState(0)
 
   const series = useMemo<SeriesPoint[]>(() => {
     if (deviceId === 'fleet') return aggregateHistory(devices, history)
@@ -96,6 +99,13 @@ export function PerformancePage() {
     const count = Number(window)
     return series.slice(Math.max(0, series.length - count))
   }, [series, window])
+
+  const maxOffset = Math.max(0, windowed.length - 1)
+  const clampedOffset = Math.min(scrubOffset, maxOffset)
+  const scrubPoint =
+    windowed.length > 0
+      ? windowed[windowed.length - 1 - clampedOffset]
+      : undefined
 
   const flagged = useMemo(() => {
     const map: Record<AnomalyKey, FlaggedPoint[]> = {
@@ -270,6 +280,57 @@ export function PerformancePage() {
         />
       ) : (
         <>
+          <Card>
+            <CardContent className="space-y-3 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <Label className="text-xs">History replay</Label>
+                <span className="font-mono text-xs text-muted-foreground">
+                  {scrubPoint ? formatClock(scrubPoint.t) : '—'}
+                  {clampedOffset === 0
+                    ? ' · live'
+                    : ` · ${clampedOffset} sample(s) ago`}
+                </span>
+              </div>
+              <Slider
+                min={0}
+                max={maxOffset}
+                step={1}
+                value={[maxOffset - clampedOffset]}
+                onValueChange={([value]) => setScrubOffset(maxOffset - value)}
+                disabled={maxOffset === 0}
+                aria-label="Replay history by sample"
+              />
+              {scrubPoint ? (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                  <ReplayStat
+                    label="Latency"
+                    value={`${round(scrubPoint.latencyMs, 1)} ms`}
+                  />
+                  <ReplayStat
+                    label="Loss"
+                    value={`${round(scrubPoint.packetLossPct, 2)}%`}
+                  />
+                  <ReplayStat
+                    label="Availability"
+                    value={`${round(scrubPoint.availabilityPct, 3)}%`}
+                  />
+                  <ReplayStat
+                    label="CPU"
+                    value={`${round(scrubPoint.cpuPct, 1)}%`}
+                  />
+                  <ReplayStat
+                    label="Memory"
+                    value={`${round(scrubPoint.memoryPct, 1)}%`}
+                  />
+                  <ReplayStat
+                    label="Throughput"
+                    value={formatMbps(scrubPoint.throughputMbps)}
+                  />
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
           {summary ? (
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <Summary
@@ -351,6 +412,7 @@ export function PerformancePage() {
                   dot={false}
                   isAnimationActive={false}
                 />
+                {scrubPoint ? <ScrubLine t={scrubPoint.t} /> : null}
                 {flagged.latencyMs.map((point) => (
                   <ReferenceDot
                     key={point.t}
@@ -413,6 +475,7 @@ export function PerformancePage() {
                     dot={false}
                     isAnimationActive={false}
                   />
+                  {scrubPoint ? <ScrubLine t={scrubPoint.t} /> : null}
                   {flagged.packetLossPct.map((point) => (
                     <ReferenceDot
                       key={point.t}
@@ -485,6 +548,7 @@ export function PerformancePage() {
                     fill="url(#availFill)"
                     isAnimationActive={false}
                   />
+                  {scrubPoint ? <ScrubLine t={scrubPoint.t} /> : null}
                 </AreaChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -539,6 +603,7 @@ export function PerformancePage() {
                     dot={false}
                     isAnimationActive={false}
                   />
+                  {scrubPoint ? <ScrubLine t={scrubPoint.t} /> : null}
                   {flagged.cpuPct.map((point) => (
                     <ReferenceDot
                       key={point.t}
@@ -601,6 +666,7 @@ export function PerformancePage() {
                     dot={false}
                     isAnimationActive={false}
                   />
+                  {scrubPoint ? <ScrubLine t={scrubPoint.t} /> : null}
                   {flagged.memoryPct.map((point) => (
                     <ReferenceDot
                       key={point.t}
@@ -676,6 +742,7 @@ export function PerformancePage() {
                     fill="url(#throughputFill)"
                     isAnimationActive={false}
                   />
+                  {scrubPoint ? <ScrubLine t={scrubPoint.t} /> : null}
                   {flagged.throughputMbps.map((point) => (
                     <ReferenceDot
                       key={point.t}
@@ -817,5 +884,27 @@ function CapacityStat({
         </p>
       </CardContent>
     </Card>
+  )
+}
+
+function ScrubLine({ t }: { t: number }) {
+  return (
+    <ReferenceLine
+      x={t}
+      stroke="#94a3b8"
+      strokeDasharray="4 4"
+      strokeWidth={1.5}
+    />
+  )
+}
+
+function ReplayStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md border border-border/60 px-2.5 py-1.5">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className="font-mono text-xs tabular-nums">{value}</p>
+    </div>
   )
 }
