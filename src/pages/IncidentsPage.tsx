@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   CheckCheck,
   CircleCheck,
+  Download,
   ShieldAlert,
   ShieldCheck,
   Waypoints,
@@ -27,6 +28,12 @@ import {
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { buildGraph, correlateRootCause } from '@/lib/dependency'
 import { runbookForIncident } from '@/lib/runbooks'
+import {
+  buildIncidentReport,
+  reportToJson,
+  reportToMarkdown,
+} from '@/lib/report'
+import { downloadText, fileDateStamp } from '@/lib/download'
 import { SEVERITY_LABELS } from '@/lib/health'
 import { formatDateTime, formatRelativeTime } from '@/lib/format'
 import { elapsedMs, formatAge } from '@/lib/time'
@@ -43,6 +50,8 @@ export function IncidentsPage() {
   const incidents = useNetworkStore((state) => state.incidents)
   const devices = useNetworkStore((state) => state.devices)
   const faults = useNetworkStore((state) => state.faults)
+  const events = useNetworkStore((state) => state.events)
+  const history = useNetworkStore((state) => state.history)
   const now = useNetworkStore((state) => state.lastTick)
   const acknowledgeIncident = useNetworkStore(
     (state) => state.acknowledgeIncident,
@@ -74,6 +83,45 @@ export function IncidentsPage() {
       limit: 3,
     })
   }, [devices, impacted])
+
+  const causeByDevice = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const cause of rootCauses) {
+      map.set(cause.deviceId, deviceName.get(cause.deviceId) ?? cause.deviceId)
+    }
+    return map
+  }, [rootCauses, deviceName])
+
+  const exportReport = (incident: Incident, format: 'md' | 'json') => {
+    const probableCause =
+      incident.deviceIds
+        .map((id) => causeByDevice.get(id))
+        .find((name): name is string => Boolean(name)) ?? null
+    const report = buildIncidentReport({
+      incident,
+      devices,
+      events,
+      history,
+      generatedAt: now,
+      runbook: runbookForIncident({ incident, devices, faults, now }),
+      probableCause,
+    })
+    const stamp = fileDateStamp(now)
+    if (format === 'json') {
+      downloadText(
+        `postmortem-${incident.id}-${stamp}.json`,
+        reportToJson(report),
+        'application/json',
+      )
+    } else {
+      downloadText(
+        `postmortem-${incident.id}-${stamp}.md`,
+        reportToMarkdown(report),
+        'text/markdown',
+      )
+    }
+    toast.success('Postmortem exported')
+  }
 
   const filter = (list: Incident[]) =>
     list
@@ -230,6 +278,26 @@ export function IncidentsPage() {
                 <ShieldCheck className="size-3" /> Resolved
               </Badge>
             )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+            <span>Export postmortem</span>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => exportReport(incident, 'md')}
+              >
+                <Download className="size-3.5" /> Markdown
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => exportReport(incident, 'json')}
+              >
+                <Download className="size-3.5" /> JSON
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
