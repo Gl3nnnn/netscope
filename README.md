@@ -35,6 +35,22 @@ keys and no paid services.
 - **Incidents** — severity levels, affected devices, timestamps, an
   acknowledgement → resolution workflow, auto-resolution and a resolved history.
   New incidents raise **browser notifications** and **in-app toasts**.
+- **SLO error budget & burn rate** — a 99.9%/30-day budget with one- and
+  six-hour burn-rate windows. The SLO page shows budget consumed/remaining and
+  the header carries a live **burn badge** (warning at 6×, critical at 14.4×).
+- **Capacity forecasting** — linear regression over rolling throughput projects
+  each device forward; the Performance page plots the dashed projection, the
+  Dashboard ranks devices by **time-to-saturation**, and device pages show an
+  **ETA to saturation**.
+- **Dependency & root cause** — the inventory-derived graph powers a cycle-safe
+  **blast radius** (highlighted on the topology map and in device details) and a
+  ranked **probable root cause** panel on the Incidents page.
+- **Remediation runbooks** — each incident gets a matched runbook (offline,
+  saturation, degradation or investigation) with step-by-step guidance and a
+  one-click **Apply runbook** that clears faults and recovers the fleet.
+- **Incident postmortems** — export a generated report (Markdown or JSON) with
+  impact, key metrics, chronological timeline, probable cause and recommended
+  actions, from the Incidents page or the command palette.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -67,16 +83,16 @@ keys and no paid services.
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
 
-| Time       | Stop                | What to show                                                                                                                                                          |
-| ---------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0:00–1:30  | **Dashboard**       | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                      |
-| 1:30–3:00  | **Command palette** | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                     |
-| 3:00–4:30  | **Device detail**   | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                   |
-| 4:30–6:00  | **Performance**     | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                    |
-| 6:00–8:00  | **Fault simulator** | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover. |
-| 8:00–9:00  | **Incidents & SLA** | Acknowledge then resolve an incident; review MTTA/MTTR and uptime against target on the SLA page.                                                                     |
-| 9:00–9:45  | **Topology**        | Pan/zoom the D3 map, drag nodes, and use focus (ego) mode to isolate a node and its neighbours.                                                                       |
-| 9:45–10:00 | **Backup & reset**  | In Settings export a full-state backup, then **Reset demo** to reseed the fleet.                                                                                      |
+| Time       | Stop                 | What to show                                                                                                                                                                       |
+| ---------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0:00–1:30  | **Dashboard**        | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                                   |
+| 1:30–3:00  | **Command palette**  | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                                  |
+| 3:00–4:30  | **Device detail**    | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                                |
+| 4:30–6:00  | **Performance**      | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                                 |
+| 6:00–8:00  | **Fault simulator**  | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover.              |
+| 8:00–9:15  | **Incidents & SLO**  | Acknowledge an incident, open its matched **runbook**, then **Apply runbook** to auto-recover the fleet. Check the SLA page's **error-budget** card and the header **burn badge**. |
+| 9:15–9:45  | **RCA & postmortem** | On Incidents read the ranked **probable root cause** and **Export postmortem** (Markdown/JSON). On Performance toggle the **forecast** projection.                                 |
+| 9:45–10:00 | **Topology & reset** | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                  |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator.
@@ -201,7 +217,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-160+ unit tests across 22 suites cover the pure, high-value logic:
+229 unit tests across 27 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -210,6 +226,11 @@ npm run test          # or: npm run test:coverage
 - Welford z-score **anomaly detection**, nearest-rank **percentiles** and
   sparkline geometry,
 - metric **trend** deltas and series windows,
+- **SLO error-budget** and multi-window **burn-rate** maths,
+- **linear-regression forecasting** and time-to-saturation projections,
+- dependency **blast radius** / **root-cause correlation** on the derived graph,
+- **runbook** matching plus the auto-remediation store action,
+- incident **postmortem** assembly and Markdown/JSON rendering,
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation

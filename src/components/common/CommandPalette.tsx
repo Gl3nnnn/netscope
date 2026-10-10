@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Search,
   Server,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -20,6 +21,8 @@ import { DEVICE_TYPE_LABELS } from '@/lib/health'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { downloadText, fileDateStamp } from '@/lib/download'
+import { runbookForIncident } from '@/lib/runbooks'
+import { buildIncidentReport, reportToMarkdown } from '@/lib/report'
 import { cn } from '@/lib/utils'
 
 type CommandGroup = 'Navigate' | 'Devices' | 'Sites' | 'Incidents' | 'Actions'
@@ -127,6 +130,56 @@ function PaletteBody({
         group: 'Actions',
         run: () => onShowHelp(),
       },
+      {
+        id: 'export-postmortem',
+        label: 'Export latest postmortem',
+        hint: 'Markdown incident report for the newest incident',
+        icon: Download,
+        group: 'Actions',
+        run: () => {
+          const state = useNetworkStore.getState()
+          const incident = [...state.incidents].sort(
+            (a, b) => b.createdAt - a.createdAt,
+          )[0]
+          if (!incident) {
+            toast.error('No incidents to report')
+            return
+          }
+          const report = buildIncidentReport({
+            incident,
+            devices: state.devices,
+            events: state.events,
+            history: state.history,
+            generatedAt: state.lastTick,
+            runbook: runbookForIncident({
+              incident,
+              devices: state.devices,
+              faults: state.faults,
+              now: state.lastTick,
+            }),
+          })
+          downloadText(
+            `postmortem-${incident.id}-${fileDateStamp(state.lastTick)}.md`,
+            reportToMarkdown(report),
+            'text/markdown',
+          )
+          toast.success('Exported postmortem')
+        },
+      },
+      ...incidents
+        .filter((incident) => incident.status !== 'resolved')
+        .slice(0, 4)
+        .map((incident) => ({
+          id: `runbook-${incident.id}`,
+          label: `Apply runbook: ${incident.title}`,
+          hint: `Auto-remediate ${incident.deviceIds.length} device(s)`,
+          icon: Wrench,
+          group: 'Actions' as const,
+          run: () => {
+            useNetworkStore.getState().runRemediation(incident.id)
+            toast.success('Runbook applied')
+          },
+        })),
     ]
 
     if (!query.trim()) return [...navigation, ...actions]
