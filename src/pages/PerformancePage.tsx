@@ -4,6 +4,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ComposedChart,
   Line,
   LineChart,
   ReferenceDot,
@@ -29,7 +30,10 @@ import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { ChartCard } from '@/components/charts/ChartCard'
 import { ChartTooltip } from '@/components/charts/ChartTooltip'
+import { Switch } from '@/components/ui/switch'
 import { useNetworkStore } from '@/store/useNetworkStore'
+import { useSettingsStore } from '@/store/useSettingsStore'
+import { forecastSeries, saturationForecast } from '@/lib/forecast'
 import { aggregateHistory } from '@/lib/aggregate'
 import { flagAnomalies, type FlaggedPoint } from '@/lib/anomaly'
 import {
@@ -39,7 +43,7 @@ import {
   maxUtilization,
   utilizationPct,
 } from '@/lib/capacity'
-import { formatClock, formatMbps, round } from '@/lib/format'
+import { formatClock, formatDuration, formatMbps, round } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { Device } from '@/types'
 
@@ -79,6 +83,8 @@ export function PerformancePage() {
   const [deviceId, setDeviceId] = useState<string>('fleet')
   const [window, setWindow] = useState<string>('60')
   const [scrubOffset, setScrubOffset] = useState(0)
+  const [forecastOn, setForecastOn] = useState(false)
+  const stepMs = useSettingsStore((state) => state.refreshIntervalMs)
 
   const series = useMemo<SeriesPoint[]>(() => {
     if (deviceId === 'fleet') return aggregateHistory(devices, history)
@@ -106,6 +112,40 @@ export function PerformancePage() {
     windowed.length > 0
       ? windowed[windowed.length - 1 - clampedOffset]
       : undefined
+
+  const capacityCeiling = useMemo(() => {
+    if (deviceId === 'fleet') {
+      if (devices.length === 0) return 0
+      return (
+        devices.reduce((sum, device) => sum + device.capacityMbps, 0) /
+        devices.length
+      )
+    }
+    return devices.find((device) => device.id === deviceId)?.capacityMbps ?? 0
+  }, [deviceId, devices])
+
+  const forecastPoints = useMemo(
+    () => forecastSeries(windowed, 'throughputMbps', 12, stepMs),
+    [windowed, stepMs],
+  )
+
+  const saturation = useMemo(
+    () => saturationForecast(windowed, capacityCeiling, 12, stepMs),
+    [windowed, capacityCeiling, stepMs],
+  )
+
+  type ChartRow = Partial<SeriesPoint> & { t: number; forecast?: number }
+  const throughputData = useMemo<ChartRow[]>(() => {
+    const rows: ChartRow[] = windowed.map((point) => ({ ...point }))
+    if (forecastOn && forecastPoints.length > 0 && rows.length > 0) {
+      const last = rows[rows.length - 1]
+      rows[rows.length - 1] = { ...last, forecast: last.throughputMbps }
+      for (const point of forecastPoints) {
+        rows.push({ t: point.t, forecast: point.value })
+      }
+    }
+    return rows
+  }, [windowed, forecastOn, forecastPoints])
 
   const flagged = useMemo(() => {
     const map: Record<AnomalyKey, FlaggedPoint[]> = {
@@ -328,6 +368,62 @@ export function PerformancePage() {
                   />
                 </div>
               ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-start gap-3">
+                <Switch
+                  id="perf-forecast"
+                  checked={forecastOn}
+                  onCheckedChange={setForecastOn}
+                  className="mt-0.5"
+                />
+                <div>
+                  <Label htmlFor="perf-forecast" className="text-sm">
+                    Capacity forecast
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Linear projection of throughput against a{' '}
+                    {formatMbps(capacityCeiling)} ceiling
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <ForecastStat
+                  label="Current"
+                  value={`${round(saturation.currentPct, 0)}%`}
+                />
+                <ForecastStat
+                  label="Projected"
+                  value={`${round(saturation.projectedPct, 0)}%`}
+                  accent={
+                    saturation.projectedPct >= SATURATION_THRESHOLD_PCT
+                      ? 'text-destructive'
+                      : saturation.projectedPct >= 60
+                        ? 'text-warning'
+                        : 'text-success'
+                  }
+                />
+                <ForecastStat
+                  label={`ETA to ${SATURATION_THRESHOLD_PCT}%`}
+                  value={
+                    saturation.etaMs === null
+                      ? 'stable'
+                      : saturation.etaMs === 0
+                        ? 'now'
+                        : formatDuration(saturation.etaMs / 1000)
+                  }
+                  accent={
+                    saturation.etaMs === null
+                      ? 'text-success'
+                      : saturation.etaMs === 0
+                        ? 'text-destructive'
+                        : 'text-warning'
+                  }
+                />
+              </div>
             </CardContent>
           </Card>
 
@@ -683,11 +779,15 @@ export function PerformancePage() {
 
             <ChartCard
               title="Throughput"
-              description="Simulated aggregate traffic"
+              description={
+                forecastOn
+                  ? 'Throughput with a dashed linear projection'
+                  : 'Simulated aggregate traffic'
+              }
             >
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={windowed}
+                <ComposedChart
+                  data={throughputData}
                   margin={{ top: 8, right: 8, left: -16, bottom: 0 }}
                 >
                   <defs>
@@ -742,6 +842,18 @@ export function PerformancePage() {
                     fill="url(#throughputFill)"
                     isAnimationActive={false}
                   />
+                  {forecastOn ? (
+                    <Line
+                      type="monotone"
+                      dataKey="forecast"
+                      name="Forecast"
+                      stroke="#38bdf8"
+                      strokeWidth={2}
+                      strokeDasharray="5 4"
+                      dot={false}
+                      isAnimationActive={false}
+                    />
+                  ) : null}
                   {scrubPoint ? <ScrubLine t={scrubPoint.t} /> : null}
                   {flagged.throughputMbps.map((point) => (
                     <ReferenceDot
@@ -753,7 +865,7 @@ export function PerformancePage() {
                       stroke="none"
                     />
                   ))}
-                </AreaChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </ChartCard>
           </div>
@@ -905,6 +1017,25 @@ function ReplayStat({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="font-mono text-xs tabular-nums">{value}</p>
+    </div>
+  )
+}
+
+function ForecastStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string
+  value: string
+  accent?: string
+}) {
+  return (
+    <div className="min-w-24 rounded-md border border-border/60 px-3 py-2">
+      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      <p className={cn('font-mono text-sm tabular-nums', accent)}>{value}</p>
     </div>
   )
 }

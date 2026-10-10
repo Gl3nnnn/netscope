@@ -45,6 +45,7 @@ import {
   DEVICE_TYPE_LABELS,
 } from '@/lib/health'
 import { utilizationPct } from '@/lib/capacity'
+import { saturationForecast } from '@/lib/forecast'
 import { percentile } from '@/lib/percentile'
 import { seriesTrend, trendLabel } from '@/lib/trend'
 import {
@@ -76,6 +77,7 @@ export function DeviceDetailPage() {
   const events = useNetworkStore((state) => state.events)
   const toggleMaintenance = useNetworkStore((state) => state.toggleMaintenance)
   const thresholds = useSettingsStore((state) => state.thresholds)
+  const stepMs = useSettingsStore((state) => state.refreshIntervalMs)
 
   const deviceIncidents = useMemo(
     () =>
@@ -124,6 +126,11 @@ export function DeviceDetailPage() {
       }),
     }
   }, [history])
+
+  const saturation = useMemo(
+    () => saturationForecast(history, device?.capacityMbps ?? 0, 12, stepMs),
+    [history, device?.capacityMbps, stepMs],
+  )
 
   if (!device) {
     return (
@@ -219,7 +226,7 @@ export function DeviceDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-4">
         <StatCard
           label="Health Score"
           value={`${score}/100`}
@@ -270,6 +277,25 @@ export function DeviceDetailPage() {
           value={formatMbps(device.throughputMbps)}
           icon={MemoryStick}
           hint={`Memory ${round(device.memoryPct, 0)}%`}
+        />
+        <StatCard
+          label="ETA to saturation"
+          value={
+            saturation.etaMs === null
+              ? 'Stable'
+              : saturation.etaMs === 0
+                ? 'Now'
+                : formatDuration(saturation.etaMs / 1000)
+          }
+          icon={Timer}
+          accent={
+            saturation.etaMs === null
+              ? 'text-success'
+              : saturation.etaMs === 0
+                ? 'text-destructive'
+                : 'text-warning'
+          }
+          hint={`${round(saturation.currentPct, 0)}% to ${round(saturation.projectedPct, 0)}% projected`}
         />
       </div>
 

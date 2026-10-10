@@ -8,6 +8,7 @@ import {
   Server,
   Signal,
   Timer,
+  TrendingUp,
   Wifi,
 } from 'lucide-react'
 import {
@@ -49,11 +50,14 @@ import { DEVICE_TYPE_LABELS } from '@/lib/health'
 import {
   formatClock,
   formatDuration,
+  formatMbps,
   formatRelativeTime,
   round,
 } from '@/lib/format'
 import { percentile } from '@/lib/percentile'
 import { seriesTrend, trendLabel } from '@/lib/trend'
+import { saturationForecast } from '@/lib/forecast'
+import { SATURATION_THRESHOLD_PCT } from '@/lib/capacity'
 import type { Severity } from '@/types'
 
 const SEVERITY_ORDER: Record<Severity, number> = {
@@ -75,6 +79,7 @@ export function DashboardPage() {
   const history = useNetworkStore((state) => state.history)
   const resetDemo = useNetworkStore((state) => state.resetDemo)
   const thresholds = useSettingsStore((state) => state.thresholds)
+  const stepMs = useSettingsStore((state) => state.refreshIntervalMs)
 
   const series = useMemo(
     () => aggregateHistory(devices, history),
@@ -183,6 +188,32 @@ export function DashboardPage() {
         .sort((a, b) => a.availabilityPct - b.availabilityPct)
         .slice(0, 5),
     [devices],
+  )
+
+  const forecasts = useMemo(
+    () =>
+      devices
+        .map((device) => ({
+          device,
+          forecast: saturationForecast(
+            history[device.id] ?? [],
+            device.capacityMbps,
+            12,
+            stepMs,
+          ),
+        }))
+        .filter(
+          (row) =>
+            row.forecast.etaMs !== null ||
+            row.forecast.projectedPct >= SATURATION_THRESHOLD_PCT,
+        )
+        .sort((a, b) => {
+          const aEta = a.forecast.etaMs ?? Number.POSITIVE_INFINITY
+          const bEta = b.forecast.etaMs ?? Number.POSITIVE_INFINITY
+          return aEta - bEta
+        })
+        .slice(0, 6),
+    [devices, history, stepMs],
   )
 
   if (devices.length === 0) {
@@ -475,6 +506,62 @@ export function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle>Capacity forecast</CardTitle>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <TrendingUp className="size-3.5" />
+            Projected next 12 samples
+          </span>
+        </CardHeader>
+        <CardContent>
+          {forecasts.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              No devices are trending toward saturation.
+            </p>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {forecasts.map(({ device, forecast }) => (
+                <Link
+                  key={device.id}
+                  to={`/devices/${device.id}`}
+                  className="flex items-center justify-between gap-2 rounded-md border border-border/60 p-3 transition-colors hover:bg-muted/40"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {device.name}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {formatMbps(device.throughputMbps)} /{' '}
+                      {formatMbps(device.capacityMbps)}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right text-xs">
+                    <p
+                      className={
+                        forecast.etaMs === 0
+                          ? 'font-mono text-destructive'
+                          : 'font-mono text-warning'
+                      }
+                    >
+                      {forecast.etaMs === null
+                        ? 'stable'
+                        : forecast.etaMs === 0
+                          ? 'saturated'
+                          : `ETA ${formatDuration(forecast.etaMs / 1000)}`}
+                    </p>
+                    <p className="text-muted-foreground">
+                      {round(forecast.currentPct, 0)}% to{' '}
+                      {round(forecast.projectedPct, 0)}%
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
