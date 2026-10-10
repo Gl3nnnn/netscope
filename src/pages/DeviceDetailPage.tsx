@@ -19,6 +19,7 @@ import {
   CartesianGrid,
   Line,
   LineChart,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -45,6 +46,7 @@ import {
 } from '@/lib/health'
 import { utilizationPct } from '@/lib/capacity'
 import { percentile } from '@/lib/percentile'
+import { seriesTrend, trendLabel } from '@/lib/trend'
 import {
   formatClock,
   formatDateTime,
@@ -102,6 +104,26 @@ export function DeviceDetailPage() {
           ),
     [history],
   )
+
+  const trends = useMemo(() => {
+    const field = (key: 'latencyMs' | 'packetLossPct' | 'availabilityPct') =>
+      history.map((sample) => sample[key])
+    return {
+      latency: trendLabel(seriesTrend(field('latencyMs')), {
+        unit: ' ms',
+        decimals: 1,
+      }),
+      loss: trendLabel(seriesTrend(field('packetLossPct')), {
+        unit: '%',
+        decimals: 2,
+      }),
+      availability: trendLabel(seriesTrend(field('availabilityPct')), {
+        unit: '%',
+        decimals: 3,
+        upIsGood: true,
+      }),
+    }
+  }, [history])
 
   if (!device) {
     return (
@@ -210,6 +232,7 @@ export function DeviceDetailPage() {
           value={`${round(device.latencyMs, 1)} ms`}
           icon={Activity}
           hint={`Threshold ${thresholds.latencyMs} ms`}
+          trend={trends.latency}
         />
         <StatCard
           label="P95 Latency"
@@ -226,6 +249,7 @@ export function DeviceDetailPage() {
           value={`${round(device.packetLossPct, 2)}%`}
           icon={Signal}
           hint={`Threshold ${thresholds.packetLossPct}%`}
+          trend={trends.loss}
         />
         <StatCard
           label="Availability"
@@ -233,6 +257,7 @@ export function DeviceDetailPage() {
           icon={Wifi}
           accent="text-info"
           hint={`Threshold ${thresholds.availabilityPct}%`}
+          trend={trends.availability}
         />
         <StatCard
           label="CPU"
@@ -320,6 +345,20 @@ export function DeviceDetailPage() {
                     fill="url(#deviceLatencyFill)"
                     isAnimationActive={false}
                   />
+                  {p95Latency !== undefined ? (
+                    <ReferenceLine
+                      y={p95Latency}
+                      stroke="#f87171"
+                      strokeDasharray="4 4"
+                      strokeWidth={1.5}
+                      label={{
+                        value: `P95 ${round(p95Latency, 0)} ms`,
+                        position: 'insideTopRight',
+                        fill: '#f87171',
+                        fontSize: 10,
+                      }}
+                    />
+                  ) : null}
                 </AreaChart>
               </ResponsiveContainer>
             </ChartCard>

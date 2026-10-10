@@ -53,6 +53,7 @@ import {
   round,
 } from '@/lib/format'
 import { percentile } from '@/lib/percentile'
+import { seriesTrend, trendLabel } from '@/lib/trend'
 import type { Severity } from '@/types'
 
 const SEVERITY_ORDER: Record<Severity, number> = {
@@ -99,6 +100,26 @@ export function DashboardPage() {
       healthDist: healthDistribution(devices, thresholds),
     }
   }, [devices, thresholds])
+
+  const trends = useMemo(() => {
+    const field = (key: 'latencyMs' | 'packetLossPct' | 'availabilityPct') =>
+      series.map((sample) => sample[key])
+    return {
+      latency: trendLabel(seriesTrend(field('latencyMs')), {
+        unit: ' ms',
+        decimals: 1,
+      }),
+      loss: trendLabel(seriesTrend(field('packetLossPct')), {
+        unit: '%',
+        decimals: 2,
+      }),
+      availability: trendLabel(seriesTrend(field('availabilityPct')), {
+        unit: '%',
+        decimals: 3,
+        upIsGood: true,
+      }),
+    }
+  }, [series])
 
   const statusData = useMemo(
     () => [
@@ -207,6 +228,7 @@ export function DashboardPage() {
           value={`${round(stats.latency, 1)} ms`}
           icon={Activity}
           hint={`Threshold ${thresholds.latencyMs} ms`}
+          trend={trends.latency}
         />
         <StatCard
           label="P95 Latency"
@@ -219,6 +241,7 @@ export function DashboardPage() {
           value={`${round(stats.loss, 2)}%`}
           icon={Signal}
           hint={`Threshold ${thresholds.packetLossPct}%`}
+          trend={trends.loss}
         />
         <StatCard
           label="Uptime"
@@ -226,6 +249,7 @@ export function DashboardPage() {
           icon={Gauge}
           accent="text-info"
           hint="Average, simulated"
+          trend={trends.availability}
         />
         <StatCard
           label="Health Score"

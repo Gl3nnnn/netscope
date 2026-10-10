@@ -1,14 +1,21 @@
 import type { LucideIcon } from 'lucide-react'
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
+
+export interface StatTrend {
+  value: string
+  direction: 'up' | 'down' | 'flat'
+  /** Whether the change is a good thing; drives the accent colour. */
+  positive?: boolean
+}
 
 interface StatCardProps {
   label: string
   value: string
   icon: LucideIcon
   hint?: string
-  trend?: { value: string; direction: 'up' | 'down'; positive?: boolean }
+  trend?: StatTrend
   accent?: string
   className?: string
 }
@@ -37,13 +44,19 @@ export function StatCard({
             <p
               className={cn(
                 'inline-flex items-center gap-1 text-xs font-medium',
-                trend.positive === false ? 'text-destructive' : 'text-success',
+                trend.direction === 'flat'
+                  ? 'text-muted-foreground'
+                  : trend.positive === false
+                    ? 'text-destructive'
+                    : 'text-success',
               )}
             >
               {trend.direction === 'up' ? (
                 <ArrowUpRight className="size-3" />
-              ) : (
+              ) : trend.direction === 'down' ? (
                 <ArrowDownRight className="size-3" />
+              ) : (
+                <Minus className="size-3" />
               )}
               {trend.value}
             </p>

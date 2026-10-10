@@ -25,6 +25,12 @@ export function formatMbps(value: number): string {
   return `${round(value, 1)} Mbps`
 }
 
+/** Signed delta label, e.g. `+2.3 ms`, `-0.15%`, `±0.0`. */
+export function formatDelta(value: number, unit = '', decimals = 1): string {
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '±'
+  return `${sign}${round(Math.abs(value), decimals)}${unit}`
+}
+
 /** Human-friendly duration from a number of seconds. */
 export function formatDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds))
