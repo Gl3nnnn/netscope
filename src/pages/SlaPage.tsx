@@ -34,8 +34,18 @@ import { ChartCard } from '@/components/charts/ChartCard'
 import { ChartTooltip } from '@/components/charts/ChartTooltip'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { computeSla, deviceUptimePct } from '@/lib/sla'
+import {
+  DEFAULT_SLO,
+  budgetConsumedPct,
+  budgetRemainingPct,
+  burnRateWindows,
+  errorBudgetMs,
+  mergeHistory,
+  type BurnState,
+} from '@/lib/slo'
 import { SEVERITY_HEX } from '@/lib/health'
 import { formatDuration, round } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import type { Severity } from '@/types'
 
 const GRID = 'hsl(217 33% 19%)'
@@ -47,14 +57,132 @@ function formatMt(ms: number | null): string {
   return formatDuration(ms / 1000)
 }
 
+function BurnBadge({ state }: { state: BurnState }) {
+  const label =
+    state === 'critical'
+      ? 'Critical burn'
+      : state === 'warning'
+        ? 'Elevated burn'
+        : 'Within budget'
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium',
+        state === 'critical'
+          ? 'border-destructive/50 bg-destructive/10 text-destructive'
+          : state === 'warning'
+            ? 'border-warning/50 bg-warning/10 text-warning'
+            : 'border-success/50 bg-success/10 text-success',
+      )}
+    >
+      {label}
+    </span>
+  )
+}
+
+function ErrorBudgetCard({
+  consumed,
+  remaining,
+  burn,
+}: {
+  consumed: number
+  remaining: number
+  burn: { fast: number; slow: number; state: BurnState }
+}) {
+  const barWidth = Math.min(100, Math.max(0, consumed))
+  const barColor =
+    consumed >= 100
+      ? 'bg-destructive'
+      : consumed >= 75
+        ? 'bg-warning'
+        : 'bg-success'
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          Error budget - {DEFAULT_SLO.objectivePct}% availability
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Remaining
+            </p>
+            <p
+              className={cn(
+                'text-3xl font-semibold tabular-nums',
+                remaining <= 0
+                  ? 'text-destructive'
+                  : remaining < 25
+                    ? 'text-warning'
+                    : 'text-success',
+              )}
+            >
+              {round(remaining, 1)}%
+            </p>
+          </div>
+          <div className="text-right text-xs text-muted-foreground">
+            <p>
+              Budget {formatDuration(errorBudgetMs(DEFAULT_SLO) / 1000)} per{' '}
+              {formatDuration(DEFAULT_SLO.windowMs / 1000)} window
+            </p>
+            <p>{round(consumed, 1)}% consumed</p>
+          </div>
+        </div>
+
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-secondary">
+          <div
+            className={cn('h-full rounded-full transition-all', barColor)}
+            style={{ width: `${barWidth}%` }}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-md border border-border/60 p-3">
+            <p className="text-xs text-muted-foreground">Fast burn (1h)</p>
+            <p className="font-mono text-lg tabular-nums">
+              {round(burn.fast, 2)}x
+            </p>
+          </div>
+          <div className="rounded-md border border-border/60 p-3">
+            <p className="text-xs text-muted-foreground">Slow burn (6h)</p>
+            <p className="font-mono text-lg tabular-nums">
+              {round(burn.slow, 2)}x
+            </p>
+          </div>
+          <div className="rounded-md border border-border/60 p-3">
+            <p className="text-xs text-muted-foreground">Status</p>
+            <div className="pt-1">
+              <BurnBadge state={burn.state} />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function SlaPage() {
   const devices = useNetworkStore((state) => state.devices)
   const incidents = useNetworkStore((state) => state.incidents)
   const history = useNetworkStore((state) => state.history)
+  const lastTick = useNetworkStore((state) => state.lastTick)
 
   const sla = useMemo(
     () => computeSla(devices, incidents, history),
     [devices, incidents, history],
+  )
+
+  const fleetSamples = useMemo(() => mergeHistory(history), [history])
+  const budgetConsumed = useMemo(
+    () => budgetConsumedPct(fleetSamples, DEFAULT_SLO),
+    [fleetSamples],
+  )
+  const budgetRemaining = budgetRemainingPct(fleetSamples, DEFAULT_SLO)
+  const burn = useMemo(
+    () => burnRateWindows(fleetSamples, DEFAULT_SLO, lastTick),
+    [fleetSamples, lastTick],
   )
 
   const severityData = useMemo(
@@ -137,6 +265,12 @@ export function SlaPage() {
           hint={`${sla.openIncidents} open - ${sla.resolvedIncidents} resolved`}
         />
       </div>
+
+      <ErrorBudgetCard
+        consumed={budgetConsumed}
+        remaining={budgetRemaining}
+        burn={burn}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ChartCard

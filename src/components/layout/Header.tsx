@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   FlaskConical,
   Menu,
@@ -7,6 +7,7 @@ import {
   Pause,
   Play,
   Search,
+  ShieldAlert,
   Sun,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,6 +19,8 @@ import {
 import { DemoBadge } from '@/components/common/DemoBadge'
 import { NotificationsMenu } from './NotificationsMenu'
 import { useSettingsStore } from '@/store/useSettingsStore'
+import { useNetworkStore } from '@/store/useNetworkStore'
+import { DEFAULT_SLO, burnRateWindows, mergeHistory } from '@/lib/slo'
 import { formatClock } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
@@ -40,12 +43,19 @@ export function Header({
   const toggleTheme = useSettingsStore((state) => state.toggleTheme)
   const simulationRunning = useSettingsStore((state) => state.simulationRunning)
   const toggleSimulation = useSettingsStore((state) => state.toggleSimulation)
+  const history = useNetworkStore((state) => state.history)
+  const lastTick = useNetworkStore((state) => state.lastTick)
 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(id)
   }, [])
+
+  const burnState = useMemo(
+    () => burnRateWindows(mergeHistory(history), DEFAULT_SLO, lastTick).state,
+    [history, lastTick],
+  )
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border/70 bg-background/80 px-3 backdrop-blur supports-[backdrop-filter]:bg-background/60 sm:px-4">
@@ -110,6 +120,27 @@ export function Header({
           </span>
           {simulationRunning ? 'Live' : 'Paused'}
         </span>
+
+        {burnState !== 'ok' ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={cn(
+                  'hidden items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium md:inline-flex',
+                  burnState === 'critical'
+                    ? 'border-destructive/50 bg-destructive/10 text-destructive'
+                    : 'border-warning/50 bg-warning/10 text-warning',
+                )}
+              >
+                <ShieldAlert className="size-3.5" />
+                {burnState === 'critical' ? 'Burn critical' : 'Burn warning'}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              Error budget burn rate is elevated - see SLA &amp; Uptime
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
 
         <span
           className="hidden font-mono text-xs text-muted-foreground sm:block"
