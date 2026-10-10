@@ -19,6 +19,7 @@ import { DemoBadge } from '@/components/common/DemoBadge'
 import { NotificationsMenu } from './NotificationsMenu'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { formatClock } from '@/lib/format'
+import { cn } from '@/lib/utils'
 
 interface HeaderProps {
   onToggleSidebar: () => void
@@ -91,6 +92,24 @@ export function Header({
             </kbd>
           </Button>
         ) : null}
+
+        <span
+          className="hidden items-center gap-1.5 rounded-full border border-border/70 bg-card/40 px-2 py-0.5 text-xs font-medium sm:inline-flex"
+          aria-live="polite"
+        >
+          <span className="relative flex size-2">
+            {simulationRunning ? (
+              <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75 motion-reduce:animate-none" />
+            ) : null}
+            <span
+              className={cn(
+                'relative inline-flex size-2 rounded-full',
+                simulationRunning ? 'bg-success' : 'bg-warning',
+              )}
+            />
+          </span>
+          {simulationRunning ? 'Live' : 'Paused'}
+        </span>
 
         <span
           className="hidden font-mono text-xs text-muted-foreground sm:block"

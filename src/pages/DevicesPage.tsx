@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useMemo, useRef, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowDown,
   ArrowUp,
@@ -44,7 +44,6 @@ import {
 import { DeviceFormDialog } from '@/components/devices/DeviceFormDialog'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import {
-  EMPTY_FILTERS,
   deviceSites,
   filterDevices,
   sortDevices,
@@ -79,13 +78,41 @@ export function DevicesPage() {
   const exportDevices = useNetworkStore((state) => state.exportDevices)
   const resetDemo = useNetworkStore((state) => state.resetDemo)
 
-  const [filters, setFilters] = useState<DeviceFilters>(EMPTY_FILTERS)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [sort, setSort] = useState<SortState>({ key: 'name', direction: 'asc' })
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Device | null>(null)
   const [pendingDelete, setPendingDelete] = useState<Device | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const importModeRef = useRef<'merge' | 'replace'>('merge')
+
+  const filters = useMemo<DeviceFilters>(() => {
+    const type = searchParams.get('type') as DeviceType | null
+    const status = searchParams.get('status') as DeviceStatus | null
+    return {
+      query: searchParams.get('q') ?? '',
+      type: type && TYPES.includes(type) ? type : 'all',
+      status: status && STATUSES.includes(status) ? status : 'all',
+      site: searchParams.get('site') ?? 'all',
+    }
+  }, [searchParams])
+
+  const updateFilters = useCallback(
+    (patch: Partial<DeviceFilters>) => {
+      const next = { ...filters, ...patch }
+      const params = new URLSearchParams()
+      if (next.query.trim()) params.set('q', next.query)
+      if (next.type !== 'all') params.set('type', next.type)
+      if (next.status !== 'all') params.set('status', next.status)
+      if (next.site !== 'all') params.set('site', next.site)
+      setSearchParams(params, { replace: true })
+    },
+    [filters, setSearchParams],
+  )
+
+  const clearFilters = useCallback(() => {
+    setSearchParams(new URLSearchParams(), { replace: true })
+  }, [setSearchParams])
 
   const sites = useMemo(() => deviceSites(devices), [devices])
 
@@ -219,12 +246,7 @@ export function DevicesPage() {
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={filters.query}
-              onChange={(event) =>
-                setFilters((current) => ({
-                  ...current,
-                  query: event.target.value,
-                }))
-              }
+              onChange={(event) => updateFilters({ query: event.target.value })}
               placeholder="Search name, IP, MAC, site or tag"
               className="pl-9"
               aria-label="Search devices"
@@ -234,10 +256,7 @@ export function DevicesPage() {
             <Select
               value={filters.type}
               onValueChange={(value) =>
-                setFilters((current) => ({
-                  ...current,
-                  type: value as DeviceType | 'all',
-                }))
+                updateFilters({ type: value as DeviceType | 'all' })
               }
             >
               <SelectTrigger aria-label="Filter by type">
@@ -255,10 +274,7 @@ export function DevicesPage() {
             <Select
               value={filters.status}
               onValueChange={(value) =>
-                setFilters((current) => ({
-                  ...current,
-                  status: value as DeviceStatus | 'all',
-                }))
+                updateFilters({ status: value as DeviceStatus | 'all' })
               }
             >
               <SelectTrigger aria-label="Filter by status">
@@ -275,9 +291,7 @@ export function DevicesPage() {
             </Select>
             <Select
               value={filters.site}
-              onValueChange={(value) =>
-                setFilters((current) => ({ ...current, site: value }))
-              }
+              onValueChange={(value) => updateFilters({ site: value })}
             >
               <SelectTrigger aria-label="Filter by site">
                 <SelectValue />
@@ -293,11 +307,7 @@ export function DevicesPage() {
             </Select>
           </div>
           {activeFilterCount > 0 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setFilters(EMPTY_FILTERS)}
-            >
+            <Button variant="ghost" size="sm" onClick={clearFilters}>
               Clear ({activeFilterCount})
             </Button>
           ) : null}
@@ -324,7 +334,7 @@ export function DevicesPage() {
           title="No devices match your filters"
           description="Try clearing the search or filters."
           action={
-            <Button variant="outline" onClick={() => setFilters(EMPTY_FILTERS)}>
+            <Button variant="outline" onClick={clearFilters}>
               Clear filters
             </Button>
           }

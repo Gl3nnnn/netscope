@@ -1,28 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  AlertTriangle,
   Download,
   Keyboard,
   Moon,
+  Network,
   Play,
   RotateCcw,
   Search,
+  Server,
   type LucideIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { NAV_ITEMS } from '@/config/navigation'
+import { deviceSites } from '@/lib/devices'
+import { DEVICE_TYPE_LABELS } from '@/lib/health'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { downloadText, fileDateStamp } from '@/lib/download'
 import { cn } from '@/lib/utils'
+
+type CommandGroup = 'Navigate' | 'Devices' | 'Sites' | 'Incidents' | 'Actions'
 
 interface Command {
   id: string
   label: string
   hint: string
   icon: LucideIcon
-  group: 'Navigate' | 'Actions'
+  group: CommandGroup
   run: () => void
 }
 
@@ -52,6 +59,8 @@ function PaletteBody({
   onShowHelp,
 }: Pick<CommandPaletteProps, 'onOpenChange' | 'onShowHelp'>) {
   const navigate = useNavigate()
+  const devices = useNetworkStore((state) => state.devices)
+  const incidents = useNetworkStore((state) => state.incidents)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState(0)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -120,8 +129,46 @@ function PaletteBody({
       },
     ]
 
-    return [...navigation, ...actions]
-  }, [navigate, onShowHelp])
+    if (!query.trim()) return [...navigation, ...actions]
+
+    const deviceCommands: Command[] = devices.map((device) => ({
+      id: `device-${device.id}`,
+      label: device.name,
+      hint: `${DEVICE_TYPE_LABELS[device.type]} - ${device.site}`,
+      icon: Server,
+      group: 'Devices',
+      run: () => navigate(`/devices/${device.id}`),
+    }))
+
+    const siteCommands: Command[] = deviceSites(devices).map((site) => ({
+      id: `site-${site}`,
+      label: site,
+      hint: 'Filter the inventory by this site',
+      icon: Network,
+      group: 'Sites',
+      run: () => navigate(`/devices?site=${encodeURIComponent(site)}`),
+    }))
+
+    const incidentCommands: Command[] = incidents
+      .filter((incident) => incident.status !== 'resolved')
+      .slice(0, 8)
+      .map((incident) => ({
+        id: `incident-${incident.id}`,
+        label: incident.title,
+        hint: `${incident.deviceIds.length} device(s) - ${incident.severity}`,
+        icon: AlertTriangle,
+        group: 'Incidents',
+        run: () => navigate('/incidents'),
+      }))
+
+    return [
+      ...navigation,
+      ...deviceCommands,
+      ...siteCommands,
+      ...incidentCommands,
+      ...actions,
+    ]
+  }, [navigate, onShowHelp, query, devices, incidents])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()

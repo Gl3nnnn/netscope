@@ -16,6 +16,7 @@ import { Header } from './Header'
 import { useSimulation } from '@/hooks/useSimulation'
 import { useTheme } from '@/hooks/useTheme'
 import { useHotkeys } from '@/hooks/useHotkeys'
+import { useIncidentToasts } from '@/hooks/useIncidentToasts'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { cn } from '@/lib/utils'
 
@@ -42,6 +43,7 @@ export function AppShell() {
     onOpenHelp: openHelp,
     onToggleChaos: toggleChaos,
   })
+  useIncidentToasts()
 
   return (
     <TooltipProvider delayDuration={200}>
