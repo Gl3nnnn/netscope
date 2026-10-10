@@ -4,6 +4,8 @@ import type {
   Device,
   DeviceInput,
   DeviceStatus,
+  FaultInjection,
+  FaultKind,
   Incident,
   MetricSample,
   TimelineEvent,
@@ -13,6 +15,11 @@ import { round, clamp } from '@/lib/format'
 import { mulberry32, seedFromParam, type Rng } from '@/simulation/random'
 import { buildSeedDevices, deviceFromInput } from '@/simulation/seed'
 import { runTick } from '@/simulation/engine'
+import {
+  activeFaults,
+  describeFaultTarget,
+  FAULT_LABELS,
+} from '@/simulation/faults'
 import {
   coerceHistory,
   exportDevicesJson,
@@ -64,6 +71,8 @@ export interface NetworkState {
   incidents: Incident[]
   events: TimelineEvent[]
   history: Record<string, MetricSample[]>
+  /** Transient, user-injected faults (never persisted or backed up). */
+  faults: FaultInjection[]
   lastTick: number
   initialized: boolean
   /** The seed driving this session (from `?seed=` or the default). */
@@ -75,6 +84,13 @@ export interface NetworkState {
   updateDevice: (id: string, patch: Partial<DeviceInput>) => void
   deleteDevice: (id: string) => void
   toggleMaintenance: (id: string) => void
+  injectFault: (
+    kind: FaultKind,
+    target: string,
+    durationMs?: number | null,
+  ) => void
+  clearFault: (id: string) => void
+  clearAllFaults: () => void
   importDevices: (devices: Device[], mode: 'merge' | 'replace') => void
   exportDevices: () => string
   restoreBackup: (payload: BackupPayload) => void
@@ -149,6 +165,7 @@ export const useNetworkStore = create<NetworkState>()(
       incidents: [],
       events: [],
       history: {},
+      faults: [],
       lastTick: 0,
       initialized: false,
       seed: ACTIVE_SEED,
@@ -199,6 +216,7 @@ export const useNetworkStore = create<NetworkState>()(
           now,
           stepMs: settings.refreshIntervalMs,
           rng,
+          faults: activeFaults(get().faults, now),
         })
 
         set((state) => {
@@ -214,6 +232,7 @@ export const useNetworkStore = create<NetworkState>()(
             incidents: result.incidents.slice(0, MAX_INCIDENTS),
             events: boundEvents([...result.events, ...state.events]),
             history,
+            faults: activeFaults(state.faults, now),
             lastTick: now,
           }
         })
@@ -320,6 +339,85 @@ export const useNetworkStore = create<NetworkState>()(
         })
       },
 
+      injectFault: (kind, target, durationMs = null) => {
+        const now = Date.now()
+        const expiresAt =
+          typeof durationMs === 'number' && durationMs > 0
+            ? now + durationMs
+            : null
+        set((state) => {
+          const fault: FaultInjection = {
+            id: createId('fault'),
+            kind,
+            target,
+            appliedAt: now,
+            expiresAt,
+          }
+          return {
+            faults: [
+              ...state.faults.filter(
+                (existing) =>
+                  !(existing.kind === kind && existing.target === target),
+              ),
+              fault,
+            ],
+            events: boundEvents([
+              {
+                id: createId('evt'),
+                timestamp: now,
+                type: 'config',
+                severity: kind === 'saturate' ? 'medium' : 'high',
+                deviceId: kind === 'site-outage' ? undefined : target,
+                message: `Simulated fault injected: ${FAULT_LABELS[kind]} at ${describeFaultTarget(fault, state.devices)}${expiresAt ? ' (auto-clears)' : ''}`,
+              },
+              ...state.events,
+            ]),
+          }
+        })
+      },
+
+      clearFault: (id) => {
+        const now = Date.now()
+        set((state) => {
+          const fault = state.faults.find((item) => item.id === id)
+          if (!fault) return state
+          return {
+            faults: state.faults.filter((item) => item.id !== id),
+            events: boundEvents([
+              {
+                id: createId('evt'),
+                timestamp: now,
+                type: 'config',
+                deviceId:
+                  fault.kind === 'site-outage' ? undefined : fault.target,
+                message: `Simulated fault cleared: ${FAULT_LABELS[fault.kind]} at ${describeFaultTarget(fault, state.devices)}`,
+              },
+              ...state.events,
+            ]),
+          }
+        })
+      },
+
+      clearAllFaults: () => {
+        const now = Date.now()
+        set((state) => {
+          if (state.faults.length === 0) return state
+          const count = state.faults.length
+          return {
+            faults: [],
+            events: boundEvents([
+              {
+                id: createId('evt'),
+                timestamp: now,
+                type: 'config',
+                message: `All simulated faults cleared (${count}).`,
+              },
+              ...state.events,
+            ]),
+          }
+        })
+      },
+
       importDevices: (incoming, mode) => {
         const now = Date.now()
         set((state) => {
@@ -385,6 +483,7 @@ export const useNetworkStore = create<NetworkState>()(
           incidents: payload.incidents.slice(0, MAX_INCIDENTS),
           events: boundEvents(payload.events),
           history,
+          faults: [],
           lastTick: now,
         })
       },
@@ -478,6 +577,7 @@ export const useNetworkStore = create<NetworkState>()(
             settings.refreshIntervalMs,
             now,
           ),
+          faults: [],
           lastTick: now,
           seed: ACTIVE_SEED,
           initialized: true,

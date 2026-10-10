@@ -23,6 +23,19 @@ export type IncidentStatus = 'open' | 'acknowledged' | 'resolved'
 
 export type EventType = 'status' | 'incident' | 'device' | 'config'
 
+/** A user-injected fault that the DEMO engine honours until cleared/expired. */
+export type FaultKind = 'device-offline' | 'site-outage' | 'saturate'
+
+export interface FaultInjection {
+  id: string
+  kind: FaultKind
+  /** Device id (device-offline / saturate) or site name (site-outage). */
+  target: string
+  appliedAt: number
+  /** Epoch ms when the fault auto-clears, or null to stay until cleared. */
+  expiresAt: number | null
+}
+
 export interface Device {
   id: string
   name: string

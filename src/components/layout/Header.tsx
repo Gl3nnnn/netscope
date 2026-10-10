@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Menu, Moon, PanelLeft, Pause, Play, Search, Sun } from 'lucide-react'
+import {
+  FlaskConical,
+  Menu,
+  Moon,
+  PanelLeft,
+  Pause,
+  Play,
+  Search,
+  Sun,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -15,12 +24,16 @@ interface HeaderProps {
   onToggleSidebar: () => void
   onOpenMobileNav: () => void
   onOpenPalette?: () => void
+  onOpenChaos?: () => void
+  chaosOpen?: boolean
 }
 
 export function Header({
   onToggleSidebar,
   onOpenMobileNav,
   onOpenPalette,
+  onOpenChaos,
+  chaosOpen,
 }: HeaderProps) {
   const theme = useSettingsStore((state) => state.theme)
   const toggleTheme = useSettingsStore((state) => state.toggleTheme)
@@ -129,6 +142,21 @@ export function Header({
           <TooltipContent>
             Switch to {theme === 'dark' ? 'light' : 'dark'} mode
           </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={chaosOpen ? 'default' : 'ghost'}
+              size="icon"
+              onClick={onOpenChaos}
+              aria-pressed={chaosOpen}
+              aria-label="Toggle fault simulator"
+            >
+              <FlaskConical className="size-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Fault simulator (F)</TooltipContent>
         </Tooltip>
 
         <NotificationsMenu />

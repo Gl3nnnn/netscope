@@ -15,6 +15,7 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['?'], label: 'Show this help' },
   { keys: ['T'], label: 'Toggle light / dark theme' },
   { keys: ['P'], label: 'Pause or resume the simulation' },
+  { keys: ['F'], label: 'Toggle the fault simulator' },
   { keys: ['ArrowUp', 'ArrowDown'], label: 'Move through palette results' },
   { keys: ['Enter'], label: 'Run the selected command' },
   { keys: ['Esc'], label: 'Close dialogs' },

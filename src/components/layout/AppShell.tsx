@@ -4,6 +4,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { PageLoader } from '@/components/common/PageLoader'
 import { CommandPalette } from '@/components/common/CommandPalette'
 import { ShortcutsDialog } from '@/components/common/ShortcutsDialog'
+import { ChaosPlayboard } from '@/components/chaos/ChaosPlayboard'
 import {
   Dialog,
   DialogContent,
@@ -27,14 +28,20 @@ export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [chaosOpen, setChaosOpen] = useState(false)
 
   const openPalette = useCallback(() => setPaletteOpen(true), [])
   const openHelp = useCallback(() => setHelpOpen(true), [])
+  const toggleChaos = useCallback(() => setChaosOpen((open) => !open), [])
   const showHelp = useCallback(() => {
     setPaletteOpen(false)
     setHelpOpen(true)
   }, [])
-  useHotkeys({ onOpenPalette: openPalette, onOpenHelp: openHelp })
+  useHotkeys({
+    onOpenPalette: openPalette,
+    onOpenHelp: openHelp,
+    onToggleChaos: toggleChaos,
+  })
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -60,6 +67,8 @@ export function AppShell() {
             onToggleSidebar={toggleSidebar}
             onOpenMobileNav={() => setMobileOpen(true)}
             onOpenPalette={openPalette}
+            onOpenChaos={toggleChaos}
+            chaosOpen={chaosOpen}
           />
           <main id="main-content" className="flex-1 px-3 py-4 sm:px-5 sm:py-6">
             <div className="mx-auto w-full max-w-7xl animate-fade-in">
@@ -90,6 +99,7 @@ export function AppShell() {
         onShowHelp={showHelp}
       />
       <ShortcutsDialog open={helpOpen} onOpenChange={setHelpOpen} />
+      <ChaosPlayboard open={chaosOpen} onOpenChange={setChaosOpen} />
     </TooltipProvider>
   )
 }

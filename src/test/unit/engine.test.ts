@@ -17,6 +17,23 @@ const calm: Rng = {
   noise: () => 0,
 }
 
+/** RNG that never fails a chance and returns the mid-point of ranges. */
+const steady: Rng = {
+  ...calm,
+  range: (min, max) => (min + max) / 2,
+}
+
+/**
+ * RNG that always succeeds meaningful chance rolls (used to force incidents).
+ * Tiny rolls such as the random maintenance window stay false so faults, not
+ * maintenance, drive the scenario under test.
+ */
+const force: Rng = {
+  ...calm,
+  range: (_min, max) => max,
+  chance: (p) => p >= 0.01,
+}
+
 describe('runTick', () => {
   it('advances every device and emits a sample for each', () => {
     const devices = buildSeedDevices(mulberry32(7), NOW)
@@ -131,6 +148,122 @@ describe('runTick', () => {
     for (const device of result.devices) {
       expect(result.samples[device.id].t).toBe(NOW)
     }
+  })
+})
+
+describe('fault injection', () => {
+  it('forces a faulted device offline and keeps its uptime at zero', () => {
+    const devices = buildSeedDevices(mulberry32(7), NOW)
+    const target = devices[0]
+    const result = runTick({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      steps: 1,
+      incidentFrequency: 0,
+      now: NOW,
+      rng: steady,
+      faults: [
+        {
+          id: 'f1',
+          kind: 'device-offline',
+          target: target.id,
+          appliedAt: NOW,
+          expiresAt: null,
+        },
+      ],
+    })
+    const faulted = result.devices.find((device) => device.id === target.id)
+    expect(faulted?.status).toBe('offline')
+    expect(faulted?.uptimeSec).toBe(0)
+    const untouched = result.devices.find((device) => device.id !== target.id)
+    expect(untouched?.status).not.toBe('offline')
+  })
+
+  it('merges every device of a severed site into one incident', () => {
+    const devices = buildSeedDevices(mulberry32(9), NOW)
+    const site = devices[0].site
+    const siteCount = devices.filter((device) => device.site === site).length
+    const result = runTick({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      steps: 1,
+      incidentFrequency: 1,
+      now: NOW,
+      rng: force,
+      faults: [
+        {
+          id: 'f2',
+          kind: 'site-outage',
+          target: site,
+          appliedAt: NOW,
+          expiresAt: null,
+        },
+      ],
+    })
+    const merged = result.incidents.find((incident) =>
+      incident.title.includes(site),
+    )
+    expect(merged).toBeDefined()
+    expect(merged?.deviceIds).toHaveLength(siteCount)
+    expect(
+      result.devices
+        .filter((device) => device.site === site)
+        .every((device) => device.status === 'offline'),
+    ).toBe(true)
+  })
+
+  it('drives a saturated link toward its capacity ceiling', () => {
+    const devices = buildSeedDevices(mulberry32(13), NOW)
+    const target = devices[0]
+    const result = runTick({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      steps: 1,
+      incidentFrequency: 0,
+      now: NOW,
+      rng: steady,
+      faults: [
+        {
+          id: 'f3',
+          kind: 'saturate',
+          target: target.id,
+          appliedAt: NOW,
+          expiresAt: null,
+        },
+      ],
+    })
+    const sample = result.samples[target.id]
+    const utilization = (sample.throughputMbps / target.capacityMbps) * 100
+    expect(utilization).toBeGreaterThan(80)
+    expect(utilization).toBeLessThanOrEqual(100)
+  })
+
+  it('ignores faults that have already expired', () => {
+    const devices = buildSeedDevices(mulberry32(13), NOW)
+    const target = devices[0]
+    const result = runTick({
+      devices,
+      incidents: [],
+      thresholds: DEFAULT_THRESHOLDS,
+      steps: 1,
+      incidentFrequency: 0,
+      now: NOW,
+      rng: steady,
+      faults: [
+        {
+          id: 'f4',
+          kind: 'device-offline',
+          target: target.id,
+          appliedAt: NOW - 10_000,
+          expiresAt: NOW - 1,
+        },
+      ],
+    })
+    const faulted = result.devices.find((device) => device.id === target.id)
+    expect(faulted?.status).not.toBe('offline')
   })
 })
 

@@ -18,6 +18,10 @@ export interface AdvanceOptions {
   outageBoost?: number
   /** Simulated wall-clock time between inner steps, in milliseconds. */
   stepMs?: number
+  /** Force the device offline this step (user-injected fault). */
+  forcedOffline?: boolean
+  /** Pin throughput toward the capacity ceiling (user-injected saturation). */
+  saturated?: boolean
 }
 
 /**
@@ -36,7 +40,13 @@ export function advanceDevice(
   now: number,
   options: AdvanceOptions = {},
 ): AdvancedDevice {
-  const { intensity = 1, outageBoost = 0, stepMs = 5000 } = options
+  const {
+    intensity = 1,
+    outageBoost = 0,
+    stepMs = 5000,
+    forcedOffline = false,
+    saturated = false,
+  } = options
   const profile = profileFor(device.type)
   const volatility = profile.volatility * intensity
   const load = trafficMultiplier(now)
@@ -58,14 +68,22 @@ export function advanceDevice(
   let loss = walk(device.packetLossPct, profile.packetLossPct, 0.15, 0, 40)
   let availability = walk(device.availabilityPct, 99.9, 0.05, 80, 100)
 
-  // Throughput rides the daily traffic curve around the type baseline.
-  const throughput = walk(
+  // Throughput rides the daily traffic curve around the type baseline. A
+  // user-injected saturation pins it near the device capacity ceiling.
+  let throughput = walk(
     device.throughputMbps,
     profile.throughputMbps * load,
     25,
     10,
     Math.max(2000, profile.capacityMbps * 1.5),
   )
+  if (saturated) {
+    throughput = clamp(
+      profile.capacityMbps * rng.range(0.85, 0.97),
+      10,
+      Math.max(2000, profile.capacityMbps * 1.5),
+    )
+  }
   const util = utilizationPct(throughput, profile.capacityMbps)
 
   let cpu = walk(device.cpuPct, profile.cpuPct, 2.5, 2, 100)
@@ -111,9 +129,15 @@ export function advanceDevice(
 
   // Utilisation places a floor under CPU: a heavily loaded box is busy.
   cpu = clamp(cpu + (util / 100) * 10, 2, 100)
+  if (saturated) cpu = clamp(Math.max(cpu, rng.range(78, 96)), 2, 100)
 
   let status: Device['status'] = device.status
-  if (device.status === 'offline' && !recovering) {
+  if (forcedOffline) {
+    status = 'offline'
+    availability = clamp(Math.min(availability, rng.range(58, 74)), 0, 100)
+    loss = clamp(loss + rng.range(10, 30), 0, 100)
+    latency = clamp(latency * 1.5 + rng.range(20, 90), 0, 2000)
+  } else if (device.status === 'offline' && !recovering) {
     status = 'offline'
     loss = clamp(loss + rng.range(5, 20), 0, 100)
     availability = clamp(availability - rng.range(0.2, 2), 0, 100)

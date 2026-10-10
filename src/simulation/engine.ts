@@ -1,5 +1,6 @@
 import type {
   Device,
+  FaultInjection,
   Incident,
   MetricSample,
   Thresholds,
@@ -7,6 +8,7 @@ import type {
 } from '@/types'
 import { createId } from '@/lib/id'
 import { advanceDevice } from './metrics'
+import { faultedSites, resolveFaultEffect } from './faults'
 import { autoResolveIncidents, generateIncidents } from './incidents'
 import type { Rng } from './random'
 import { trafficMultiplier } from './timecurve'
@@ -22,6 +24,8 @@ export interface TickInput {
   rng: Rng
   /** Simulated wall-clock time between inner steps, in milliseconds. */
   stepMs?: number
+  /** User-injected faults the engine should honour this tick. */
+  faults?: FaultInjection[]
 }
 
 export interface TickResult {
@@ -42,6 +46,7 @@ export function runTick(input: TickInput): TickResult {
   const { thresholds, incidentFrequency, now, rng } = input
   const steps = Math.max(1, Math.round(input.steps))
   const stepMs = Math.max(1000, input.stepMs ? input.stepMs : 5000)
+  const faults = input.faults ?? []
   const events: TimelineEvent[] = []
   let devices = input.devices
 
@@ -54,6 +59,11 @@ export function runTick(input: TickInput): TickResult {
     // Inner steps share one wall-clock tick but are simulated as if they
     // happened at staggered times, so history and events read naturally.
     const eventTime = now - (steps - 1 - s) * stepMs
+
+    // User-injected site outages count as disturbed sites for incident merging.
+    for (const site of faultedSites(faults, eventTime)) {
+      disturbedSites.add(site)
+    }
 
     // Occasionally a whole site is disturbed at once, degrading every device in
     // it and producing correlated incidents (realistic for shared uplinks).
@@ -72,9 +82,12 @@ export function runTick(input: TickInput): TickResult {
 
     const advanced = devices.map((device) => {
       const affected = distressedSite !== null && device.site === distressedSite
+      const effect = resolveFaultEffect(faults, device, eventTime)
       return advanceDevice(device, rng, thresholds, eventTime, {
         intensity: affected ? 2.5 : 1,
         outageBoost: affected ? 6 : 0,
+        forcedOffline: effect.forcedOffline,
+        saturated: effect.saturated,
         stepMs,
       })
     })

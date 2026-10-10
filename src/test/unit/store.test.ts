@@ -82,6 +82,38 @@ describe('useNetworkStore', () => {
     ).toBe(false)
   })
 
+  it('injects, de-duplicates and clears transient faults', () => {
+    const id = useNetworkStore.getState().devices[0].id
+    useNetworkStore.getState().injectFault('device-offline', id)
+    expect(useNetworkStore.getState().faults).toHaveLength(1)
+    expect(useNetworkStore.getState().faults[0].kind).toBe('device-offline')
+
+    useNetworkStore.getState().injectFault('device-offline', id)
+    expect(useNetworkStore.getState().faults).toHaveLength(1)
+
+    const faultId = useNetworkStore.getState().faults[0].id
+    useNetworkStore.getState().clearFault(faultId)
+    expect(useNetworkStore.getState().faults).toHaveLength(0)
+  })
+
+  it('forces a faulted device offline on the next tick', () => {
+    const id = useNetworkStore.getState().devices[0].id
+    useNetworkStore.getState().injectFault('device-offline', id)
+    useNetworkStore.getState().tick()
+    expect(
+      useNetworkStore.getState().devices.find((d) => d.id === id)?.status,
+    ).toBe('offline')
+  })
+
+  it('drops faults when the demo resets', () => {
+    const id = useNetworkStore.getState().devices[0].id
+    useNetworkStore.getState().injectFault('device-offline', id)
+    expect(useNetworkStore.getState().faults).toHaveLength(1)
+
+    useNetworkStore.getState().resetDemo()
+    expect(useNetworkStore.getState().faults).toHaveLength(0)
+  })
+
   it('imports devices in replace mode', () => {
     useNetworkStore.getState().importDevices(
       [
@@ -135,10 +167,7 @@ describe('useNetworkStore', () => {
         },
       ],
       history: {
-        restored_1: [
-          sample(1, 12),
-          sample(2, 18),
-        ],
+        restored_1: [sample(1, 12), sample(2, 18)],
         orphaned_dev: [sample(1, 9)],
       },
       settings: {

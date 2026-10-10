@@ -4,6 +4,7 @@ import { useSettingsStore } from '@/store/useSettingsStore'
 export interface HotkeyHandlers {
   onOpenPalette: () => void
   onOpenHelp: () => void
+  onToggleChaos?: () => void
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -22,6 +23,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * - ?            : show the shortcuts help dialog
  * - t            : toggle light/dark theme
  * - p            : pause / resume the simulation
+ * - f            : toggle the fault simulator playboard
  */
 export function useHotkeys(handlers: HotkeyHandlers): void {
   const ref = useRef(handlers)
@@ -47,6 +49,8 @@ export function useHotkeys(handlers: HotkeyHandlers): void {
         useSettingsStore.getState().toggleTheme()
       } else if (key === 'p') {
         useSettingsStore.getState().toggleSimulation()
+      } else if (key === 'f') {
+        ref.current.onToggleChaos?.()
       }
     }
     window.addEventListener('keydown', onKeyDown)
