@@ -38,11 +38,22 @@ const SettingsPage = lazy(() =>
 const AlertsPage = lazy(() =>
   import('@/pages/AlertsPage').then((m) => ({ default: m.AlertsPage })),
 )
+const WallboardPage = lazy(() =>
+  import('@/pages/WallboardPage').then((m) => ({ default: m.WallboardPage })),
+)
 
 export function App() {
   return (
     <HashRouter>
       <Routes>
+        <Route
+          path="wallboard"
+          element={
+            <ErrorBoundary>
+              <WallboardPage />
+            </ErrorBoundary>
+          }
+        />
         <Route element={<AppShell />}>
           <Route
             index

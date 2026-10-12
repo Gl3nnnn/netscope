@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   Download,
   Keyboard,
+  Monitor,
   Moon,
   Network,
   Play,
@@ -79,6 +80,14 @@ function PaletteBody({
     }))
 
     const actions: Command[] = [
+      {
+        id: 'open-wallboard',
+        label: 'Open NOC wallboard',
+        hint: 'Full-screen rotating operations view',
+        icon: Monitor,
+        group: 'Actions',
+        run: () => navigate('/wallboard'),
+      },
       {
         id: 'toggle-theme',
         label: 'Toggle theme',

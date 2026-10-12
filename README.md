@@ -56,6 +56,9 @@ keys and no paid services.
   testable engine evaluates every device each tick, moving alerts through
   **pending → firing → resolved**, surfacing toasts, a header firing count and a
   dedicated **Alerts** page with active, rule and history views.
+- **NOC wallboard** — press `W` for a full-screen, chrome-less kiosk view that
+  auto-rotates between fleet KPIs, a throughput trend, top utilisation and the
+  live incident/alert queue, with a rotation progress bar and click-to-pin dots.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -65,7 +68,7 @@ keys and no paid services.
 - **Command palette** — press `Ctrl/Cmd+K` to fuzzy-search **devices, sites and
   incidents** as well as pages and actions; `?` opens keyboard-shortcut help, `T`
   toggles the theme, `P` toggles the simulation, `F` toggles the fault
-  simulator and `A` jumps to the Alerts page.
+  simulator, `A` jumps to the Alerts page and `W` opens the NOC wallboard.
 - **Settings** — theme, simulation controls (run/pause, speed, refresh interval,
   incident frequency), degradation thresholds and history bounds, plus
   **full-state backup/restore** (JSON) and **CSV export** of the inventory and
@@ -100,7 +103,7 @@ in the browser.
 | 9:45–10:00 | **Topology & reset** | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                  |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
-`F` fault simulator · `A` alerts.
+`F` fault simulator · `A` alerts · `W` wallboard.
 
 ---
 
@@ -222,7 +225,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-246 unit tests across 28 suites cover the pure, high-value logic:
+254 unit tests across 29 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -238,6 +241,7 @@ npm run test          # or: npm run test:coverage
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
   derivation and pending → firing → resolved transitions),
+- **wallboard panel rotation** indexing and progress,
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation

@@ -37,6 +37,7 @@ export function AppShell() {
   const openHelp = useCallback(() => setHelpOpen(true), [])
   const toggleChaos = useCallback(() => setChaosOpen((open) => !open), [])
   const openAlerts = useCallback(() => navigate('/alerts'), [navigate])
+  const openWallboard = useCallback(() => navigate('/wallboard'), [navigate])
   const showHelp = useCallback(() => {
     setPaletteOpen(false)
     setHelpOpen(true)
@@ -46,6 +47,7 @@ export function AppShell() {
     onOpenHelp: openHelp,
     onToggleChaos: toggleChaos,
     onOpenAlerts: openAlerts,
+    onOpenWallboard: openWallboard,
   })
   useIncidentToasts()
   useAlertToasts()
