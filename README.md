@@ -90,6 +90,10 @@ keys and no paid services.
   captures a snapshot every tick so you can scrub back, play an incident frame by
   frame, jump to when a known incident opened, and **diff any two moments** to
   see status changes and the biggest metric movers. Nothing is persisted.
+- **Ask NetScope** — a deterministic, offline natural-language assistant. Ask
+  about fleet health, a device, a site, incident counts, capacity, a route or
+  uptime and get a cited, structured answer built from the same engines as the
+  rest of the app — no network calls, no LLM.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -117,7 +121,7 @@ keys and no paid services.
 
 ---
 
-## Demo walkthrough (15 minutes)
+## Demo walkthrough (16 minutes)
 
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
@@ -137,7 +141,8 @@ in the browser.
 | 11:20–12:20 | **Trace & plan**         | On **Path Tracer** trace a route and read the **critical hop** and detour, then on **Planner** scale traffic **+100%** and watch utilisation jump, saturation flags appear and the live fleet stay untouched. |
 | 12:20–13:20 | **Automation**           | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.              |
 | 13:20–14:20 | **Time Machine**         | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                         |
-| 14:20–15:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                             |
+| 14:20–15:20 | **Ask NetScope**         | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                              |
+| 15:20–16:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                             |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -206,7 +211,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, playbooks, replay, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, playbooks, replay, copilot, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -262,7 +267,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-349 unit tests across 37 suites cover the pure, high-value logic:
+364 unit tests across 38 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -295,6 +300,8 @@ npm run test          # or: npm run test:coverage
 - **Time Machine replay** (frame capture and aggregates, bounded ring-buffer
   trimming, nearest-frame seeking, incident-open detection and frame-to-frame
   status/metric diffing),
+- **Ask NetScope intent parsing** (fleet/device/site status, counts, ranking by
+  metric or health, incidents, capacity, routing and SLO answers),
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation

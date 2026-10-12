@@ -14,6 +14,7 @@ import {
   Share2,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Workflow,
   type LucideIcon,
 } from 'lucide-react'
@@ -109,6 +110,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Time Machine',
     icon: History,
     description: 'Replay and diff history',
+  },
+  {
+    to: '/assistant',
+    label: 'Ask NetScope',
+    icon: Sparkles,
+    description: 'Natural-language fleet Q&A',
   },
   {
     to: '/timeline',

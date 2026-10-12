@@ -66,6 +66,9 @@ const AutomationPage = lazy(() =>
 const ReplayPage = lazy(() =>
   import('@/pages/ReplayPage').then((m) => ({ default: m.ReplayPage })),
 )
+const AskPage = lazy(() =>
+  import('@/pages/AskPage').then((m) => ({ default: m.AskPage })),
+)
 const WallboardPage = lazy(() =>
   import('@/pages/WallboardPage').then((m) => ({ default: m.WallboardPage })),
 )
@@ -208,6 +211,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <ReplayPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="assistant"
+            element={
+              <ErrorBoundary>
+                <AskPage />
               </ErrorBoundary>
             }
           />

@@ -12,6 +12,7 @@ import {
   RotateCcw,
   Search,
   Server,
+  Sparkles,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
@@ -96,6 +97,14 @@ function PaletteBody({
         icon: Activity,
         group: 'Actions',
         run: () => navigate('/status'),
+      },
+      {
+        id: 'ask-netscope',
+        label: 'Ask NetScope',
+        hint: 'Natural-language fleet Q&A',
+        icon: Sparkles,
+        group: 'Actions',
+        run: () => navigate('/assistant'),
       },
       {
         id: 'toggle-theme',
