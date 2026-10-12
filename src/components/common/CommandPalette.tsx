@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  Activity,
   AlertTriangle,
   Download,
   Keyboard,
@@ -87,6 +88,14 @@ function PaletteBody({
         icon: Monitor,
         group: 'Actions',
         run: () => navigate('/wallboard'),
+      },
+      {
+        id: 'open-status',
+        label: 'Open public status page',
+        hint: 'Chrome-less uptime board for synthetic monitors',
+        icon: Activity,
+        group: 'Actions',
+        run: () => navigate('/status'),
       },
       {
         id: 'toggle-theme',
