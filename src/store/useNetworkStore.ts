@@ -35,8 +35,10 @@ import { useAlertsStore } from './useAlertsStore'
 import { useMonitorsStore } from './useMonitorsStore'
 import { useChannelsStore } from './useChannelsStore'
 import { useAutomationStore } from './useAutomationStore'
+import { useReplayStore } from './useReplayStore'
 import { firingAlerts } from '@/lib/alerts'
 import type { PlaybookRun } from '@/lib/playbooks'
+import { captureFrame } from '@/lib/replay'
 
 const BASE_SEED = 0x5eed1234
 const MAX_EVENTS = 500
@@ -346,6 +348,17 @@ export const useNetworkStore = create<NetworkState>()(
           now,
         })
         for (const run of runs) executeAutomationRun(run, now)
+
+        // Record a Time Machine frame for scrub-back replay.
+        useReplayStore.getState().push(
+          captureFrame({
+            t: now,
+            devices: get().devices,
+            incidents: get().incidents,
+            events: get().events,
+            thresholds: settings.thresholds,
+          }),
+        )
       },
 
       addDevice: (input) => {

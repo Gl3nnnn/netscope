@@ -86,6 +86,10 @@ keys and no paid services.
   **Maintenance windows** scope a site or device set and quiet alerting and
   automation for their duration. Every execution is logged on the **Automation**
   page.
+- **Time Machine** — a bounded, in-memory recording of the fleet (≤240 frames)
+  captures a snapshot every tick so you can scrub back, play an incident frame by
+  frame, jump to when a known incident opened, and **diff any two moments** to
+  see status changes and the biggest metric movers. Nothing is persisted.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -113,7 +117,7 @@ keys and no paid services.
 
 ---
 
-## Demo walkthrough (14 minutes)
+## Demo walkthrough (15 minutes)
 
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
@@ -132,7 +136,8 @@ in the browser.
 | 10:50–11:20 | **Explorer & wallboard** | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                |
 | 11:20–12:20 | **Trace & plan**         | On **Path Tracer** trace a route and read the **critical hop** and detour, then on **Planner** scale traffic **+100%** and watch utilisation jump, saturation flags appear and the live fleet stay untouched. |
 | 12:20–13:20 | **Automation**           | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.              |
-| 13:20–14:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                             |
+| 13:20–14:20 | **Time Machine**         | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                         |
+| 14:20–15:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                             |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -201,7 +206,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, playbooks, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, playbooks, replay, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -257,7 +262,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-339 unit tests across 36 suites cover the pure, high-value logic:
+349 unit tests across 37 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -287,6 +292,9 @@ npm run test          # or: npm run test:coverage
 - **automation playbooks** (trigger/scope matching, severity floors, per-device
   cooldowns and run planning) and **maintenance-window** activity, scoping and
   suppression,
+- **Time Machine replay** (frame capture and aggregates, bounded ring-buffer
+  trimming, nearest-frame seeking, incident-open detection and frame-to-frame
+  status/metric diffing),
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation

@@ -63,6 +63,9 @@ const AutomationPage = lazy(() =>
     default: m.AutomationPage,
   })),
 )
+const ReplayPage = lazy(() =>
+  import('@/pages/ReplayPage').then((m) => ({ default: m.ReplayPage })),
+)
 const WallboardPage = lazy(() =>
   import('@/pages/WallboardPage').then((m) => ({ default: m.WallboardPage })),
 )
@@ -197,6 +200,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <AutomationPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="replay"
+            element={
+              <ErrorBoundary>
+                <ReplayPage />
               </ErrorBoundary>
             }
           />

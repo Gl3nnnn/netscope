@@ -4,6 +4,7 @@ import {
   Clock,
   FlaskConical,
   Gauge,
+  History,
   LayoutDashboard,
   Route,
   SearchCode,
@@ -102,6 +103,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Automation',
     icon: Workflow,
     description: 'Playbooks and maintenance',
+  },
+  {
+    to: '/replay',
+    label: 'Time Machine',
+    icon: History,
+    description: 'Replay and diff history',
   },
   {
     to: '/timeline',
