@@ -13,6 +13,7 @@ import {
   Share2,
   ShieldAlert,
   ShieldCheck,
+  Workflow,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -95,6 +96,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Notifications',
     icon: Send,
     description: 'Channels and escalation',
+  },
+  {
+    to: '/automation',
+    label: 'Automation',
+    icon: Workflow,
+    description: 'Playbooks and maintenance',
   },
   {
     to: '/timeline',

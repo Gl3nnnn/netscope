@@ -34,7 +34,9 @@ import { useSettingsStore } from './useSettingsStore'
 import { useAlertsStore } from './useAlertsStore'
 import { useMonitorsStore } from './useMonitorsStore'
 import { useChannelsStore } from './useChannelsStore'
+import { useAutomationStore } from './useAutomationStore'
 import { firingAlerts } from '@/lib/alerts'
+import type { PlaybookRun } from '@/lib/playbooks'
 
 const BASE_SEED = 0x5eed1234
 const MAX_EVENTS = 500
@@ -69,6 +71,62 @@ function trackFlapping(devices: Device[]): Device[] {
     const flapping = transitions >= FLAP_MIN_TRANSITIONS
     return device.flapping === flapping ? device : { ...device, flapping }
   })
+}
+
+/** Carry out a playbook run's actions against the live network store. */
+function executeAutomationRun(run: PlaybookRun, now: number): void {
+  const store = useNetworkStore.getState()
+  for (const action of run.actions) {
+    if (action.kind === 'notify') {
+      store.pushEvent({
+        timestamp: now,
+        type: 'config',
+        severity: 'low',
+        message: `Automation "${run.playbookName}" ran on ${run.deviceIds.length} device(s)${
+          action.value ? ` — ${action.value}` : ''
+        }.`,
+      })
+    } else if (action.kind === 'acknowledge') {
+      for (const incident of useNetworkStore.getState().incidents) {
+        if (
+          incident.status === 'open' &&
+          incident.deviceIds.some((id) => run.deviceIds.includes(id))
+        ) {
+          useNetworkStore.getState().acknowledgeIncident(incident.id)
+        }
+      }
+    } else if (action.kind === 'remediate') {
+      for (const incident of useNetworkStore.getState().incidents) {
+        if (
+          incident.status !== 'resolved' &&
+          incident.deviceIds.some((id) => run.deviceIds.includes(id))
+        ) {
+          useNetworkStore.getState().runRemediation(incident.id)
+        }
+      }
+    } else if (action.kind === 'maintenance') {
+      for (const id of run.deviceIds) {
+        const device = useNetworkStore
+          .getState()
+          .devices.find((d) => d.id === id)
+        if (device && !device.inMaintenance) {
+          useNetworkStore.getState().toggleMaintenance(id)
+        }
+      }
+    } else if (action.kind === 'tag' && action.value) {
+      const tag = action.value
+      for (const id of run.deviceIds) {
+        const device = useNetworkStore
+          .getState()
+          .devices.find((d) => d.id === id)
+        if (device && !device.tags.includes(tag)) {
+          useNetworkStore.getState().updateDevice(id, {
+            tags: [...device.tags, tag],
+          })
+        }
+      }
+    }
+  }
 }
 
 export interface NetworkState {
@@ -270,6 +328,24 @@ export const useNetworkStore = create<NetworkState>()(
         // Escalate still-firing alerts through the notification channels.
         const { states } = useAlertsStore.getState()
         useChannelsStore.getState().runEscalation(firingAlerts(states), now)
+
+        // Mark devices inside active maintenance windows (engine suppresses
+        // incident noise for them), then run any due automation playbooks.
+        const maintenance = new Set(
+          useAutomationStore.getState().maintenanceTargets(get().devices, now),
+        )
+        for (const device of get().devices) {
+          const desired = maintenance.has(device.id)
+          if ((device.inMaintenance ?? false) !== desired) {
+            get().toggleMaintenance(device.id)
+          }
+        }
+        const runs = useAutomationStore.getState().plan({
+          devices: get().devices,
+          alerts: firingAlerts(states),
+          now,
+        })
+        for (const run of runs) executeAutomationRun(run, now)
       },
 
       addDevice: (input) => {

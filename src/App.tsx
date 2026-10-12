@@ -58,6 +58,11 @@ const NotificationsPage = lazy(() =>
     default: m.NotificationsPage,
   })),
 )
+const AutomationPage = lazy(() =>
+  import('@/pages/AutomationPage').then((m) => ({
+    default: m.AutomationPage,
+  })),
+)
 const WallboardPage = lazy(() =>
   import('@/pages/WallboardPage').then((m) => ({ default: m.WallboardPage })),
 )
@@ -184,6 +189,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <NotificationsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="automation"
+            element={
+              <ErrorBoundary>
+                <AutomationPage />
               </ErrorBoundary>
             }
           />
