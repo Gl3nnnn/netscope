@@ -1,5 +1,6 @@
 import {
   Activity,
+  BellRing,
   Clock,
   LayoutDashboard,
   Server,
@@ -53,6 +54,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Incidents',
     icon: ShieldAlert,
     description: 'Open and past incidents',
+  },
+  {
+    to: '/alerts',
+    label: 'Alerts',
+    icon: BellRing,
+    description: 'Custom rule alerts',
   },
   {
     to: '/timeline',

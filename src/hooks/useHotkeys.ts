@@ -5,6 +5,8 @@ export interface HotkeyHandlers {
   onOpenPalette: () => void
   onOpenHelp: () => void
   onToggleChaos?: () => void
+  onOpenAlerts?: () => void
+  onOpenWallboard?: () => void
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -24,6 +26,8 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * - t            : toggle light/dark theme
  * - p            : pause / resume the simulation
  * - f            : toggle the fault simulator playboard
+ * - a            : jump to the Alerts page
+ * - w            : open the NOC wallboard
  */
 export function useHotkeys(handlers: HotkeyHandlers): void {
   const ref = useRef(handlers)
@@ -51,6 +55,10 @@ export function useHotkeys(handlers: HotkeyHandlers): void {
         useSettingsStore.getState().toggleSimulation()
       } else if (key === 'f') {
         ref.current.onToggleChaos?.()
+      } else if (key === 'a') {
+        ref.current.onOpenAlerts?.()
+      } else if (key === 'w') {
+        ref.current.onOpenWallboard?.()
       }
     }
     window.addEventListener('keydown', onKeyDown)

@@ -16,6 +16,8 @@ const SHORTCUTS: { keys: string[]; label: string }[] = [
   { keys: ['T'], label: 'Toggle light / dark theme' },
   { keys: ['P'], label: 'Pause or resume the simulation' },
   { keys: ['F'], label: 'Toggle the fault simulator' },
+  { keys: ['A'], label: 'Jump to the Alerts page' },
+  { keys: ['W'], label: 'Open the NOC wallboard' },
   { keys: ['ArrowUp', 'ArrowDown'], label: 'Move through palette results' },
   { keys: ['Enter'], label: 'Run the selected command' },
   { keys: ['Esc'], label: 'Close dialogs' },

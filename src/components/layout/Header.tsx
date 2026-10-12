@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
+  BellRing,
   FlaskConical,
   Menu,
   Moon,
@@ -20,6 +22,8 @@ import { DemoBadge } from '@/components/common/DemoBadge'
 import { NotificationsMenu } from './NotificationsMenu'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useNetworkStore } from '@/store/useNetworkStore'
+import { useAlertsStore } from '@/store/useAlertsStore'
+import { firingAlerts } from '@/lib/alerts'
 import { DEFAULT_SLO, burnRateWindows, mergeHistory } from '@/lib/slo'
 import { formatClock } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -45,12 +49,18 @@ export function Header({
   const toggleSimulation = useSettingsStore((state) => state.toggleSimulation)
   const history = useNetworkStore((state) => state.history)
   const lastTick = useNetworkStore((state) => state.lastTick)
+  const alertStates = useAlertsStore((state) => state.states)
 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000)
     return () => window.clearInterval(id)
   }, [])
+
+  const firingCount = useMemo(
+    () => firingAlerts(alertStates).length,
+    [alertStates],
+  )
 
   const burnState = useMemo(
     () => burnRateWindows(mergeHistory(history), DEFAULT_SLO, lastTick).state,
@@ -138,6 +148,24 @@ export function Header({
             </TooltipTrigger>
             <TooltipContent>
               Error budget burn rate is elevated - see SLA &amp; Uptime
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+
+        {firingCount > 0 ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to="/alerts"
+                className="hidden items-center gap-1.5 rounded-full border border-destructive/50 bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive md:inline-flex"
+              >
+                <BellRing className="size-3.5" />
+                {firingCount} firing
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              {firingCount} alert{firingCount === 1 ? '' : 's'} firing - see
+              Alerts
             </TooltipContent>
           </Tooltip>
         ) : null}

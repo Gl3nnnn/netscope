@@ -35,6 +35,9 @@ const TimelinePage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })),
 )
+const AlertsPage = lazy(() =>
+  import('@/pages/AlertsPage').then((m) => ({ default: m.AlertsPage })),
+)
 
 export function App() {
   return (
@@ -94,6 +97,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <IncidentsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="alerts"
+            element={
+              <ErrorBoundary>
+                <AlertsPage />
               </ErrorBoundary>
             }
           />

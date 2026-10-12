@@ -1,5 +1,5 @@
 import { Suspense, useCallback, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { PageLoader } from '@/components/common/PageLoader'
 import { CommandPalette } from '@/components/common/CommandPalette'
@@ -17,6 +17,7 @@ import { useSimulation } from '@/hooks/useSimulation'
 import { useTheme } from '@/hooks/useTheme'
 import { useHotkeys } from '@/hooks/useHotkeys'
 import { useIncidentToasts } from '@/hooks/useIncidentToasts'
+import { useAlertToasts } from '@/hooks/useAlertToasts'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { cn } from '@/lib/utils'
 
@@ -24,6 +25,7 @@ export function AppShell() {
   useSimulation()
   useTheme()
 
+  const navigate = useNavigate()
   const collapsed = useSettingsStore((state) => state.sidebarCollapsed)
   const toggleSidebar = useSettingsStore((state) => state.toggleSidebar)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -34,6 +36,7 @@ export function AppShell() {
   const openPalette = useCallback(() => setPaletteOpen(true), [])
   const openHelp = useCallback(() => setHelpOpen(true), [])
   const toggleChaos = useCallback(() => setChaosOpen((open) => !open), [])
+  const openAlerts = useCallback(() => navigate('/alerts'), [navigate])
   const showHelp = useCallback(() => {
     setPaletteOpen(false)
     setHelpOpen(true)
@@ -42,8 +45,10 @@ export function AppShell() {
     onOpenPalette: openPalette,
     onOpenHelp: openHelp,
     onToggleChaos: toggleChaos,
+    onOpenAlerts: openAlerts,
   })
   useIncidentToasts()
+  useAlertToasts()
 
   return (
     <TooltipProvider delayDuration={200}>

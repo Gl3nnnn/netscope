@@ -31,6 +31,7 @@ import {
 import type { BackupPayload } from '@/types'
 import { createDebouncedStorage } from '@/storage/debouncedStorage'
 import { useSettingsStore } from './useSettingsStore'
+import { useAlertsStore } from './useAlertsStore'
 
 const BASE_SEED = 0x5eed1234
 const MAX_EVENTS = 500
@@ -238,6 +239,27 @@ export const useNetworkStore = create<NetworkState>()(
             lastTick: now,
           }
         })
+
+        // Evaluate user-defined alert rules against the freshly advanced fleet.
+        const changes = useAlertsStore
+          .getState()
+          .evaluate({ devices: get().devices, now })
+        if (changes.length > 0) {
+          const alertEvents: TimelineEvent[] = changes.map((change) => ({
+            id: createId('evt'),
+            timestamp: now,
+            type: 'status',
+            severity: change.instance.severity,
+            deviceId: change.instance.deviceId,
+            message:
+              change.kind === 'firing'
+                ? `Alert firing: ${change.instance.ruleName} on ${change.instance.deviceName} (${change.instance.value})`
+                : `Alert resolved: ${change.instance.ruleName} on ${change.instance.deviceName}`,
+          }))
+          set((state) => ({
+            events: boundEvents([...alertEvents, ...state.events]),
+          }))
+        }
       },
 
       addDevice: (input) => {
