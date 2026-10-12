@@ -24,6 +24,11 @@ keys and no paid services.
   over the derived topology, with an animated packet along the path, per-hop
   latency/loss/utilisation breakdown, a highlighted **critical hop**, and a
   healthy **detour** suggestion when a hop is down.
+- **What-if planner** — a sandboxed digital twin that projects the fleet forward
+  under hypothetical changes (add devices, scale traffic, upgrade capacity, fail a
+  node or a whole site) using the real simulation engine on a cloned snapshot. It
+  compares **baseline vs projected** utilisation, headroom and saturation and flags
+  the devices that would saturate — without touching the live fleet.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -102,24 +107,25 @@ keys and no paid services.
 
 ---
 
-## Demo walkthrough (12 minutes)
+## Demo walkthrough (13 minutes)
 
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
 
-| Time        | Stop                     | What to show                                                                                                                                                                       |
-| ----------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0:00–1:30   | **Dashboard**            | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                                   |
-| 1:30–3:00   | **Command palette**      | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                                  |
-| 3:00–4:30   | **Device detail**        | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                                |
-| 4:30–6:00   | **Performance**          | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                                 |
-| 6:00–8:00   | **Fault simulator**      | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover.              |
-| 8:00–9:00   | **Incidents & SLO**      | Acknowledge an incident, open its matched **runbook**, then **Apply runbook** to auto-recover the fleet. Check the SLA page's **error-budget** card and the header **burn badge**. |
-| 9:00–9:30   | **RCA & postmortem**     | On Incidents read the ranked **probable root cause** and **Export postmortem** (Markdown/JSON). On Performance toggle the **forecast** projection.                                 |
-| 9:30–10:15  | **Alerts & channels**    | Create a threshold rule with **New rule**, watch it go **Pending → Firing**, then on **Notifications** see severity-routed **deliveries** and tune the **escalation ladder**.      |
-| 10:15–10:50 | **Monitors & status**    | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                    |
-| 10:50–11:30 | **Explorer & wallboard** | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                     |
-| 11:30–12:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                  |
+| Time        | Stop                     | What to show                                                                                                                                                                                                  |
+| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0:00–1:30   | **Dashboard**            | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                                                              |
+| 1:30–3:00   | **Command palette**      | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                                                             |
+| 3:00–4:30   | **Device detail**        | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                                                           |
+| 4:30–6:00   | **Performance**          | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                                                            |
+| 6:00–8:00   | **Fault simulator**      | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover.                                         |
+| 8:00–9:00   | **Incidents & SLO**      | Acknowledge an incident, open its matched **runbook**, then **Apply runbook** to auto-recover the fleet. Check the SLA page's **error-budget** card and the header **burn badge**.                            |
+| 9:00–9:30   | **RCA & postmortem**     | On Incidents read the ranked **probable root cause** and **Export postmortem** (Markdown/JSON). On Performance toggle the **forecast** projection.                                                            |
+| 9:30–10:15  | **Alerts & channels**    | Create a threshold rule with **New rule**, watch it go **Pending → Firing**, then on **Notifications** see severity-routed **deliveries** and tune the **escalation ladder**.                                 |
+| 10:15–10:50 | **Monitors & status**    | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                                               |
+| 10:50–11:20 | **Explorer & wallboard** | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                |
+| 11:20–12:20 | **Trace & plan**         | On **Path Tracer** trace a route and read the **critical hop** and detour, then on **Planner** scale traffic **+100%** and watch utilisation jump, saturation flags appear and the live fleet stay untouched. |
+| 12:20–13:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                             |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -188,7 +194,7 @@ src/
 │   └── {alerts,monitors,channels,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, alerts, monitors, channels, query, aggregate
+├── lib/               # format, health, tracer, planner, alerts, monitors, channels, query
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -244,7 +250,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-303 unit tests across 34 suites cover the pure, high-value logic:
+320 unit tests across 35 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -258,6 +264,8 @@ npm run test          # or: npm run test:coverage
 - dependency **blast radius** / **root-cause correlation** on the derived graph,
 - **path tracing** (BFS shortest path, alternate/detour routes, per-hop latency
   summing and loss survival-product scoring),
+- the **what-if planner** (scenario overlays, sandboxed engine projection
+  determinism, baseline-vs-projected deltas and saturation flagging),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric

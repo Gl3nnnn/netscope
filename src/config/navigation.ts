@@ -2,6 +2,7 @@ import {
   Activity,
   BellRing,
   Clock,
+  FlaskConical,
   Gauge,
   LayoutDashboard,
   Route,
@@ -40,6 +41,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Path Tracer',
     icon: Route,
     description: 'Trace routes between devices',
+  },
+  {
+    to: '/planner',
+    label: 'Planner',
+    icon: FlaskConical,
+    description: 'What-if capacity planning',
   },
   {
     to: '/devices',
