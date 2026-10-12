@@ -47,6 +47,11 @@ const MonitorsPage = lazy(() =>
 const StatusPage = lazy(() =>
   import('@/pages/StatusPage').then((m) => ({ default: m.StatusPage })),
 )
+const NotificationsPage = lazy(() =>
+  import('@/pages/NotificationsPage').then((m) => ({
+    default: m.NotificationsPage,
+  })),
+)
 const WallboardPage = lazy(() =>
   import('@/pages/WallboardPage').then((m) => ({ default: m.WallboardPage })),
 )
@@ -149,6 +154,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <MonitorsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="notifications"
+            element={
+              <ErrorBoundary>
+                <NotificationsPage />
               </ErrorBoundary>
             }
           />

@@ -5,6 +5,7 @@ import {
   Gauge,
   LayoutDashboard,
   SearchCode,
+  Send,
   Server,
   Settings,
   Share2,
@@ -74,6 +75,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Monitors',
     icon: Gauge,
     description: 'Synthetic monitors',
+  },
+  {
+    to: '/notifications',
+    label: 'Notifications',
+    icon: Send,
+    description: 'Channels and escalation',
   },
   {
     to: '/timeline',

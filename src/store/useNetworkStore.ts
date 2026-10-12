@@ -33,6 +33,8 @@ import { createDebouncedStorage } from '@/storage/debouncedStorage'
 import { useSettingsStore } from './useSettingsStore'
 import { useAlertsStore } from './useAlertsStore'
 import { useMonitorsStore } from './useMonitorsStore'
+import { useChannelsStore } from './useChannelsStore'
+import { firingAlerts } from '@/lib/alerts'
 
 const BASE_SEED = 0x5eed1234
 const MAX_EVENTS = 500
@@ -264,6 +266,10 @@ export const useNetworkStore = create<NetworkState>()(
 
         // Run any due synthetic uptime monitors against the fresh fleet.
         useMonitorsStore.getState().runAll(get().devices, now)
+
+        // Escalate still-firing alerts through the notification channels.
+        const { states } = useAlertsStore.getState()
+        useChannelsStore.getState().runEscalation(firingAlerts(states), now)
       },
 
       addDevice: (input) => {

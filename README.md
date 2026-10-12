@@ -67,6 +67,10 @@ keys and no paid services.
   interval, deriving an operational posture from simulated latency, loss and
   availability while they roll into uptime. The chrome-less **Status** page
   (`/status`) renders them as a public-facing status board.
+- **Notification channels & escalation** — route firing alerts to email, Slack,
+  webhook or pager channels filtered by minimum severity, then re-notify and
+  page still-open critical alerts on a configurable escalation ladder. Every
+  delivery is logged with its escalation level.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -233,7 +237,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-285 unit tests across 32 suites cover the pure, high-value logic:
+291 unit tests across 33 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -254,6 +258,8 @@ npm run test          # or: npm run test:coverage
   metric-comparison matching) and time-window **series alignment**,
 - **synthetic monitor targeting** (device, site or fleet), status derivation,
   per-check averaging and rolling uptime,
+- **channel routing and escalation** (severity thresholds, escalation levels and
+  final-page targeting),
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation
