@@ -3,6 +3,7 @@ import {
   BellRing,
   Clock,
   LayoutDashboard,
+  SearchCode,
   Server,
   Settings,
   Share2,
@@ -60,6 +61,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Alerts',
     icon: BellRing,
     description: 'Custom rule alerts',
+  },
+  {
+    to: '/explorer',
+    label: 'Explorer',
+    icon: SearchCode,
+    description: 'Query and overlay metrics',
   },
   {
     to: '/timeline',

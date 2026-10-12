@@ -59,6 +59,10 @@ keys and no paid services.
 - **NOC wallboard** — press `W` for a full-screen, chrome-less kiosk view that
   auto-rotates between fleet KPIs, a throughput trend, top utilisation and the
   live incident/alert queue, with a rotation progress bar and click-to-pin dots.
+- **Metric explorer** — the **Explorer** page filters devices with a small query
+  language (`site:DC-A`, `type:router`, `latency>50`, `util>80`, free text) and
+  overlays up to eight historical series plus the fleet average across any
+  metric and time window, with a ranked results table.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -225,7 +229,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-254 unit tests across 29 suites cover the pure, high-value logic:
+275 unit tests across 31 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -242,6 +246,8 @@ npm run test          # or: npm run test:coverage
 - the **alert rules engine** (operator comparison, scope matching, metric
   derivation and pending → firing → resolved transitions),
 - **wallboard panel rotation** indexing and progress,
+- the **explorer query language** (token parsing, alias resolution, field and
+  metric-comparison matching) and time-window **series alignment**,
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation
