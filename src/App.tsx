@@ -41,6 +41,12 @@ const AlertsPage = lazy(() =>
 const ExplorerPage = lazy(() =>
   import('@/pages/ExplorerPage').then((m) => ({ default: m.ExplorerPage })),
 )
+const MonitorsPage = lazy(() =>
+  import('@/pages/MonitorsPage').then((m) => ({ default: m.MonitorsPage })),
+)
+const StatusPage = lazy(() =>
+  import('@/pages/StatusPage').then((m) => ({ default: m.StatusPage })),
+)
 const WallboardPage = lazy(() =>
   import('@/pages/WallboardPage').then((m) => ({ default: m.WallboardPage })),
 )
@@ -54,6 +60,14 @@ export function App() {
           element={
             <ErrorBoundary>
               <WallboardPage />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="status"
+          element={
+            <ErrorBoundary>
+              <StatusPage />
             </ErrorBoundary>
           }
         />
@@ -127,6 +141,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <ExplorerPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="monitors"
+            element={
+              <ErrorBoundary>
+                <MonitorsPage />
               </ErrorBoundary>
             }
           />

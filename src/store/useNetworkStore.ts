@@ -32,6 +32,7 @@ import type { BackupPayload } from '@/types'
 import { createDebouncedStorage } from '@/storage/debouncedStorage'
 import { useSettingsStore } from './useSettingsStore'
 import { useAlertsStore } from './useAlertsStore'
+import { useMonitorsStore } from './useMonitorsStore'
 
 const BASE_SEED = 0x5eed1234
 const MAX_EVENTS = 500
@@ -260,6 +261,9 @@ export const useNetworkStore = create<NetworkState>()(
             events: boundEvents([...alertEvents, ...state.events]),
           }))
         }
+
+        // Run any due synthetic uptime monitors against the fresh fleet.
+        useMonitorsStore.getState().runAll(get().devices, now)
       },
 
       addDevice: (input) => {

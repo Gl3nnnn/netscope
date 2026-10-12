@@ -2,6 +2,7 @@ import {
   Activity,
   BellRing,
   Clock,
+  Gauge,
   LayoutDashboard,
   SearchCode,
   Server,
@@ -67,6 +68,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Explorer',
     icon: SearchCode,
     description: 'Query and overlay metrics',
+  },
+  {
+    to: '/monitors',
+    label: 'Monitors',
+    icon: Gauge,
+    description: 'Synthetic monitors',
   },
   {
     to: '/timeline',

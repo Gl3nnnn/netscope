@@ -63,6 +63,10 @@ keys and no paid services.
   language (`site:DC-A`, `type:router`, `latency>50`, `util>80`, free text) and
   overlays up to eight historical series plus the fleet average across any
   metric and time window, with a ranked results table.
+- **Synthetic monitors** — probes check a device, site or the whole fleet on an
+  interval, deriving an operational posture from simulated latency, loss and
+  availability while they roll into uptime. The chrome-less **Status** page
+  (`/status`) renders them as a public-facing status board.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -229,7 +233,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-275 unit tests across 31 suites cover the pure, high-value logic:
+285 unit tests across 32 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -248,6 +252,8 @@ npm run test          # or: npm run test:coverage
 - **wallboard panel rotation** indexing and progress,
 - the **explorer query language** (token parsing, alias resolution, field and
   metric-comparison matching) and time-window **series alignment**,
+- **synthetic monitor targeting** (device, site or fleet), status derivation,
+  per-check averaging and rolling uptime,
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation
