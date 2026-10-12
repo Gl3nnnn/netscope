@@ -20,6 +20,10 @@ keys and no paid services.
   throughput traffic, and **focus (ego) mode** isolates a node and its
   neighbours. Node positions persist to `localStorage`
   (`netscope:topology`), so the layout survives reloads.
+- **Path tracer** — pick a source and destination to trace the hop-by-hop route
+  over the derived topology, with an animated packet along the path, per-hop
+  latency/loss/utilisation breakdown, a highlighted **critical hop**, and a
+  healthy **detour** suggestion when a hop is down.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -240,7 +244,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-291 unit tests across 33 suites cover the pure, high-value logic:
+303 unit tests across 34 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -252,6 +256,8 @@ npm run test          # or: npm run test:coverage
 - **SLO error-budget** and multi-window **burn-rate** maths,
 - **linear-regression forecasting** and time-to-saturation projections,
 - dependency **blast radius** / **root-cause correlation** on the derived graph,
+- **path tracing** (BFS shortest path, alternate/detour routes, per-hop latency
+  summing and loss survival-product scoring),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric

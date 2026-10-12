@@ -4,6 +4,7 @@ import {
   Clock,
   Gauge,
   LayoutDashboard,
+  Route,
   SearchCode,
   Send,
   Server,
@@ -33,6 +34,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Topology',
     icon: Share2,
     description: 'Interactive network map',
+  },
+  {
+    to: '/tracer',
+    label: 'Path Tracer',
+    icon: Route,
+    description: 'Trace routes between devices',
   },
   {
     to: '/devices',
