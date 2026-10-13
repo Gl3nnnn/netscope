@@ -3,6 +3,7 @@ import {
   BellRing,
   CalendarClock,
   Clock,
+  FileCog,
   FlaskConical,
   Gauge,
   History,
@@ -58,6 +59,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Policy',
     icon: Lock,
     description: 'ACL and reachability analysis',
+  },
+  {
+    to: '/configs',
+    label: 'Config Drift',
+    icon: FileCog,
+    description: 'Baseline and running diff',
   },
   {
     to: '/devices',

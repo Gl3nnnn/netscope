@@ -110,6 +110,11 @@ keys and no paid services.
   **rotations** (daily to bi-weekly). The page shows who is on call **right
   now**, the upcoming **handoff schedule**, the ordered **escalation chain**,
   and the header carries a live **on-call badge** that links straight there.
+- **Configuration drift** — every device carries an approved **baseline** and a
+  running config. A deterministic, dependency-free **line diff** highlights
+  added/removed lines, a filter surfaces drifted devices, and you can **edit the
+  running config**, **accept** it as the new baseline, or **roll back** to any of
+  the retained **version history** — each action logging a config event.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -137,7 +142,7 @@ keys and no paid services.
 
 ---
 
-## Demo walkthrough (17 minutes)
+## Demo walkthrough (18 minutes)
 
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
@@ -159,7 +164,8 @@ in the browser.
 | 13:20–14:20 | **Time Machine**               | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                                                         |
 | 14:20–15:20 | **Ask NetScope**               | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                                              |
 | 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.                             |
-| 16:20–17:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                             |
+| 16:20–17:20 | **Config drift**               | On **Config Drift** toggle **Drifted only**, read the baseline → running **line diff**, **Edit** the running config, then **Accept as baseline** and roll back a version.                                                                     |
+| 17:20–18:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                             |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -228,11 +234,11 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, policy, reachability, oncall, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, policy, reachability, oncall, configdiff, configs, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
-├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes)
+├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs)
 ├── test/              # setup + unit tests
 └── types/             # shared domain types
 ```
@@ -284,7 +290,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-399 unit tests across 42 suites cover the pure, high-value logic:
+415 unit tests across 44 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -327,6 +333,9 @@ npm run test          # or: npm run test:coverage
   under policy, offline-hop detection and what-if impact diffing),
 - **on-call scheduling** (slot indexing before/after the anchor, member cycling,
   handoff windows and the wrap-around escalation chain),
+- **configuration diffing** (LCS line diffing, change summary and collapsed
+  unified output) and **drift detection** (deterministic baseline generation,
+  CRLF-tolerant comparison and fleet-wide drift summaries),
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation
