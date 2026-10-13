@@ -22,6 +22,9 @@ const PolicyPage = lazy(() =>
 const ConfigsPage = lazy(() =>
   import('@/pages/ConfigsPage').then((m) => ({ default: m.ConfigsPage })),
 )
+const ReportsPage = lazy(() =>
+  import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
+)
 const DevicesPage = lazy(() =>
   import('@/pages/DevicesPage').then((m) => ({ default: m.DevicesPage })),
 )
@@ -153,6 +156,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <ConfigsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="reports"
+            element={
+              <ErrorBoundary>
+                <ReportsPage />
               </ErrorBoundary>
             }
           />

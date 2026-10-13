@@ -2,6 +2,7 @@ import {
   Activity,
   BellRing,
   CalendarClock,
+  ClipboardList,
   Clock,
   FileCog,
   FlaskConical,
@@ -131,6 +132,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Time Machine',
     icon: History,
     description: 'Replay and diff history',
+  },
+  {
+    to: '/reports',
+    label: 'Reports',
+    icon: ClipboardList,
+    description: 'Executive report studio',
   },
   {
     to: '/assistant',

@@ -115,6 +115,12 @@ keys and no paid services.
   added/removed lines, a filter surfaces drifted devices, and you can **edit the
   running config**, **accept** it as the new baseline, or **roll back** to any of
   the retained **version history** — each action logging a config event.
+- **Executive reports** — assemble a report from live telemetry using presets
+  (fleet health, SLA & SLO, capacity, incidents, on-call or a full executive
+  summary) and per-section toggles over a 24h/7d/30d window. The previews cover
+  health, error budget, site SLA, capacity outlook, ranked incidents, the change
+  log and on-call coverage, and export as **Markdown** or a self-contained,
+  print-ready **HTML** document (inline styles + inline SVG sparkline).
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -142,7 +148,7 @@ keys and no paid services.
 
 ---
 
-## Demo walkthrough (18 minutes)
+## Demo walkthrough (19 minutes)
 
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
@@ -165,7 +171,8 @@ in the browser.
 | 14:20–15:20 | **Ask NetScope**               | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                                              |
 | 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.                             |
 | 16:20–17:20 | **Config drift**               | On **Config Drift** toggle **Drifted only**, read the baseline → running **line diff**, **Edit** the running config, then **Accept as baseline** and roll back a version.                                                                     |
-| 17:20–18:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                             |
+| 17:20–18:20 | **Executive report**           | On **Reports** choose the **Executive summary** preset, scan the sections, then **Print** it or export **Markdown**/**HTML**.                                                                                                                 |
+| 18:20–19:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                             |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -234,7 +241,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, policy, reachability, oncall, configdiff, configs, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, policy, reachability, oncall, configdiff, configs, reports, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -290,7 +297,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-415 unit tests across 44 suites cover the pure, high-value logic:
+429 unit tests across 45 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -336,6 +343,10 @@ npm run test          # or: npm run test:coverage
 - **configuration diffing** (LCS line diffing, change summary and collapsed
   unified output) and **drift detection** (deterministic baseline generation,
   CRLF-tolerant comparison and fleet-wide drift summaries),
+- **executive report assembly** (canonical section ordering and filtering,
+  headline/health rollups, incident ranking, change-log scoping and on-call
+  coverage) and Markdown/HTML rendering (self-contained inline-styled document
+  with HTML-escaped content and inline SVG sparklines),
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation
