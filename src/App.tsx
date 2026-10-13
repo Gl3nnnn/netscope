@@ -71,6 +71,9 @@ const AutomationPage = lazy(() =>
     default: m.AutomationPage,
   })),
 )
+const OnCallPage = lazy(() =>
+  import('@/pages/OnCallPage').then((m) => ({ default: m.OnCallPage })),
+)
 const ReplayPage = lazy(() =>
   import('@/pages/ReplayPage').then((m) => ({ default: m.ReplayPage })),
 )
@@ -227,6 +230,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <AutomationPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="oncall"
+            element={
+              <ErrorBoundary>
+                <OnCallPage />
               </ErrorBoundary>
             }
           />

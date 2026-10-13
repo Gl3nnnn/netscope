@@ -1,6 +1,7 @@
 import {
   Activity,
   BellRing,
+  CalendarClock,
   Clock,
   FlaskConical,
   Gauge,
@@ -105,6 +106,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Notifications',
     icon: Send,
     description: 'Channels and escalation',
+  },
+  {
+    to: '/oncall',
+    label: 'On-Call',
+    icon: CalendarClock,
+    description: 'Rotations and escalation',
   },
   {
     to: '/automation',

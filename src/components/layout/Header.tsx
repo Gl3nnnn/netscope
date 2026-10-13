@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   BellRing,
+  CalendarClock,
   FlaskConical,
   Menu,
   Moon,
@@ -23,7 +24,9 @@ import { NotificationsMenu } from './NotificationsMenu'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { useAlertsStore } from '@/store/useAlertsStore'
+import { useOnCallStore } from '@/store/useOnCallStore'
 import { firingAlerts } from '@/lib/alerts'
+import { currentOnCall } from '@/lib/oncall'
 import { DEFAULT_SLO, burnRateWindows, mergeHistory } from '@/lib/slo'
 import { formatClock } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -50,6 +53,8 @@ export function Header({
   const history = useNetworkStore((state) => state.history)
   const lastTick = useNetworkStore((state) => state.lastTick)
   const alertStates = useAlertsStore((state) => state.states)
+  const teams = useOnCallStore((state) => state.teams)
+  const rotations = useOnCallStore((state) => state.rotations)
 
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
@@ -60,6 +65,11 @@ export function Header({
   const firingCount = useMemo(
     () => firingAlerts(alertStates).length,
     [alertStates],
+  )
+
+  const onCall = useMemo(
+    () => currentOnCall(teams, rotations, now),
+    [teams, rotations, now],
   )
 
   const burnState = useMemo(
@@ -166,6 +176,32 @@ export function Header({
             <TooltipContent>
               {firingCount} alert{firingCount === 1 ? '' : 's'} firing - see
               Alerts
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+
+        {onCall.length > 0 ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                to="/oncall"
+                className="hidden items-center gap-1.5 rounded-full border border-border/70 bg-card/40 px-2 py-0.5 text-xs font-medium md:inline-flex"
+              >
+                <CalendarClock className="size-3.5 text-primary" />
+                <span className="max-w-28 truncate">
+                  {onCall[0].member?.name ?? 'Unassigned'}
+                </span>
+                <span className="text-muted-foreground">on call</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <div className="space-y-0.5">
+                {onCall.map((entry) => (
+                  <p key={entry.rotation.id}>
+                    {entry.rotation.name}: {entry.member?.name ?? 'Unassigned'}
+                  </p>
+                ))}
+              </div>
             </TooltipContent>
           </Tooltip>
         ) : null}
