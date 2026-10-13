@@ -29,6 +29,11 @@ keys and no paid services.
   node or a whole site) using the real simulation engine on a cloned snapshot. It
   compares **baseline vs projected** utilisation, headroom and saturation and flags
   the devices that would saturate — without touching the live fleet.
+- **Resilience & chaos** — static analysis finds **single points of failure**
+  (articulation points whose failure strands other devices from the core), measures
+  path **redundancy** and rolls it into a 0-100 **resilience score**. A **chaos lab**
+  then injects combined faults (core/site outages, link saturation, traffic surges)
+  on a cloned, seeded fleet and reports how each **business service** fares.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -171,11 +176,11 @@ in the browser.
 | 9:30–10:15  | **Alerts, channels & on-call** | Create a threshold rule with **New rule**, watch it go **Pending → Firing**, see severity-routed **deliveries** on **Notifications**, then set up a team and **rotation** on **On-Call** and read the header on-call badge.                   |
 | 10:15–10:50 | **Monitors & status**          | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                                                                               |
 | 10:50–11:20 | **Explorer & wallboard**       | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                                                |
-| 11:20–12:20 | **Trace, plan & policy**       | On **Path Tracer** trace a route and read the **critical hop** and detour, on **Planner** scale traffic **+100%** and watch utilisation jump, then on **Policy** flip a rule and watch the **reachability matrix** and path explainer update. |
+| 11:20–12:20 | **Trace, plan & policy**       | On **Path Tracer** trace a route and read the **critical hop** and detour, on **Planner** scale traffic **+100%** and watch utilisation jump, then on **Policy** flip a rule and watch the **reachability matrix** and path explainer update, and on **Resilience** run a chaos experiment against a business service. |
 | 12:20–13:20 | **Automation**                 | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.                                              |
 | 13:20–14:20 | **Time Machine**               | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                                                         |
 | 14:20–15:20 | **Ask NetScope**               | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                                              |
-| 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, **business impact**, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.                             |
+| 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, **business impact**, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.        |
 | 16:20–17:20 | **Config drift**               | On **Config Drift** toggle **Drifted only**, read the baseline → running **line diff**, **Edit** the running config, then **Accept as baseline** and roll back a version.                                                                     |
 | 17:20–18:20 | **Executive report**           | On **Reports** choose the **Executive summary** preset, scan the sections, then **Print** it or export **Markdown**/**HTML**.                                                                                                                 |
 | 18:20–19:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                             |
@@ -247,7 +252,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, policy, reachability, oncall, configdiff, configs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -303,7 +308,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-444 unit tests across 46 suites cover the pure, high-value logic:
+458 unit tests across 47 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -319,6 +324,10 @@ npm run test          # or: npm run test:coverage
   summing and loss survival-product scoring),
 - the **what-if planner** (scenario overlays, sandboxed engine projection
   determinism, baseline-vs-projected deltas and saturation flagging),
+- **resilience analysis** (Tarjan articulation points, core selection, stranded
+  isolation sets, redundancy ratio and the blended resilience score) and the
+  **chaos sandbox** (clone-only combined-fault simulation, service-outcome
+  diffing and preset generation),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric

@@ -16,6 +16,11 @@ const TracerPage = lazy(() =>
 const PlannerPage = lazy(() =>
   import('@/pages/PlannerPage').then((m) => ({ default: m.PlannerPage })),
 )
+const ResiliencePage = lazy(() =>
+  import('@/pages/ResiliencePage').then((m) => ({
+    default: m.ResiliencePage,
+  })),
+)
 const PolicyPage = lazy(() =>
   import('@/pages/PolicyPage').then((m) => ({ default: m.PolicyPage })),
 )
@@ -143,6 +148,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <PlannerPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="resilience"
+            element={
+              <ErrorBoundary>
+                <ResiliencePage />
               </ErrorBoundary>
             }
           />

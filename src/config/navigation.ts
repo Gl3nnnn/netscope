@@ -8,6 +8,7 @@ import {
   FileCog,
   FlaskConical,
   Gauge,
+  HeartPulse,
   History,
   LayoutDashboard,
   Lock,
@@ -55,6 +56,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Planner',
     icon: FlaskConical,
     description: 'What-if capacity planning',
+  },
+  {
+    to: '/resilience',
+    label: 'Resilience',
+    icon: HeartPulse,
+    description: 'SPOF analysis and chaos lab',
   },
   {
     to: '/policy',
