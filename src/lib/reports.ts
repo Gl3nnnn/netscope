@@ -27,6 +27,13 @@ import { saturationForecast } from './forecast'
 import { formatDuration, round } from './format'
 import { HEALTH_LABELS, SEVERITY_LABELS, healthLevel } from './health'
 import { DAY_MS, type CurrentOnCall } from './oncall'
+import {
+  SERVICE_IMPACT_LABELS,
+  SERVICE_STATUS_LABELS,
+  SERVICE_TIER_LABELS,
+  businessImpactSummary,
+  type BusinessService,
+} from './services'
 import { computeSla, incidentsBySeverity, siteSla } from './sla'
 import {
   DEFAULT_SLO,
@@ -49,6 +56,7 @@ import {
 
 export type ReportSectionId =
   | 'overview'
+  | 'services'
   | 'sla'
   | 'slo'
   | 'sites'
@@ -59,6 +67,7 @@ export type ReportSectionId =
 
 export const ALL_REPORT_SECTIONS: ReportSectionId[] = [
   'overview',
+  'services',
   'sla',
   'slo',
   'sites',
@@ -70,6 +79,7 @@ export const ALL_REPORT_SECTIONS: ReportSectionId[] = [
 
 export const REPORT_SECTION_LABELS: Record<ReportSectionId, string> = {
   overview: 'Fleet health',
+  services: 'Business services',
   sla: 'Service levels',
   slo: 'Error budget',
   sites: 'Site SLA',
@@ -103,7 +113,14 @@ export const REPORT_PRESETS: ReportPreset[] = [
     id: 'fleet',
     name: 'Fleet health',
     description: 'Overall health snapshot and service levels.',
-    sections: ['overview', 'sla'],
+    sections: ['overview', 'services', 'sla'],
+    rangeMs: DAY_MS,
+  },
+  {
+    id: 'business',
+    name: 'Business impact',
+    description: 'Service health, criticality and exposure.',
+    sections: ['services', 'sla'],
     rangeMs: DAY_MS,
   },
   {
@@ -184,6 +201,8 @@ export interface ReportContext {
   sections?: ReportSectionId[]
   /** Current on-call snapshot, e.g. from `useOnCallStore` + `currentOnCall`. */
   onCall?: CurrentOnCall[]
+  /** Business service catalog for the business-impact section. */
+  services?: BusinessService[]
   /** SLO target for the error-budget section. */
   slo?: SloTarget
 }
@@ -271,6 +290,60 @@ function overviewSection(
       ],
     },
     sparkline: sparkline.length > 1 ? sparkline : undefined,
+  }
+}
+
+function servicesSection(ctx: ReportContext): ReportSection {
+  const services = ctx.services ?? []
+  if (services.length === 0) {
+    return {
+      id: 'services',
+      title: 'Business services',
+      summary: 'No business services are defined.',
+      metrics: [{ label: 'Services', value: '0' }],
+      notes: ['Map devices to services on the Business Services page.'],
+    }
+  }
+
+  const summary = businessImpactSummary({
+    services,
+    devices: ctx.devices,
+    incidents: ctx.incidents,
+    thresholds: ctx.thresholds,
+  })
+  const worstById = new Map(
+    summary.worst.map((entry) => [entry.serviceId, entry]),
+  )
+
+  return {
+    id: 'services',
+    title: 'Business services',
+    summary: `${summary.atRisk} of ${summary.totalServices} services are impaired — ${summary.label.toLowerCase()}.`,
+    metrics: [
+      { label: 'Services', value: `${summary.totalServices}` },
+      { label: 'At risk', value: `${summary.atRisk}` },
+      { label: 'Major outages', value: `${summary.outage}` },
+      { label: 'Partial', value: `${summary.partial}` },
+      { label: 'Degraded', value: `${summary.degraded}` },
+      {
+        label: 'Business risk',
+        value: `${summary.score}`,
+        hint: summary.label,
+      },
+    ],
+    table: {
+      columns: ['Service', 'Tier', 'Impact', 'Status', 'Devices'],
+      rows: services.map((service) => {
+        const health = worstById.get(service.id)
+        return [
+          service.name,
+          SERVICE_TIER_LABELS[service.tier],
+          SERVICE_IMPACT_LABELS[service.impact],
+          health ? SERVICE_STATUS_LABELS[health.status] : 'Operational',
+          `${health ? health.affectedDeviceIds.length : 0}`,
+        ]
+      }),
+    },
   }
 }
 
@@ -595,6 +668,7 @@ export function buildExecutiveReport(ctx: ReportContext): ExecutiveReport {
 
   const builders: Record<ReportSectionId, () => ReportSection> = {
     overview: () => overviewSection(ctx, incidents),
+    services: () => servicesSection(ctx),
     sla: () => slaSection(ctx, incidents),
     slo: () => sloSection(ctx),
     sites: () => sitesSection(ctx, incidents),

@@ -23,6 +23,7 @@ import {
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { useSettingsStore } from '@/store/useSettingsStore'
 import { useOnCallStore } from '@/store/useOnCallStore'
+import { useServicesStore } from '@/store/useServicesStore'
 import { downloadText, fileDateStamp } from '@/lib/download'
 import { currentOnCall } from '@/lib/oncall'
 import {
@@ -149,6 +150,7 @@ export function ReportsPage() {
   const thresholds = useSettingsStore((state) => state.thresholds)
   const teams = useOnCallStore((state) => state.teams)
   const rotations = useOnCallStore((state) => state.rotations)
+  const services = useServicesStore((state) => state.services)
 
   const [presetId, setPresetId] = useState(REPORT_PRESETS[0].id)
   const [sections, setSections] = useState<ReportSectionId[]>(
@@ -173,6 +175,7 @@ export function ReportsPage() {
         generatedAt: lastTick,
         sections,
         onCall,
+        services,
       }),
     [
       devices,
@@ -183,6 +186,7 @@ export function ReportsPage() {
       sections,
       rangeMs,
       onCall,
+      services,
       lastTick,
     ],
   )

@@ -32,7 +32,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useNetworkStore } from '@/store/useNetworkStore'
 import { useIncidentNotesStore } from '@/store/useIncidentNotesStore'
 import { useReplayStore } from '@/store/useReplayStore'
+import { useServicesStore } from '@/store/useServicesStore'
 import { buildIncidentRoom, type CausalEntry } from '@/lib/warroom'
+import {
+  SERVICE_IMPACT_LABELS,
+  SERVICE_TIER_LABELS,
+  incidentBusinessImpact,
+} from '@/lib/services'
 import { reportToJson, reportToMarkdown } from '@/lib/report'
 import { downloadText, fileDateStamp } from '@/lib/download'
 import { SEVERITY_LABELS } from '@/lib/health'
@@ -84,12 +90,18 @@ export function IncidentRoomPage() {
   const notes = useIncidentNotesStore((state) => state.notes)
   const addNote = useIncidentNotesStore((state) => state.addNote)
   const deleteNote = useIncidentNotesStore((state) => state.deleteNote)
+  const services = useServicesStore((state) => state.services)
 
   const [draft, setDraft] = useState('')
 
   const incident = useMemo(
     () => incidents.find((item) => item.id === id),
     [incidents, id],
+  )
+
+  const businessImpact = useMemo(
+    () => (incident ? incidentBusinessImpact(incident, services, devices) : []),
+    [incident, services, devices],
   )
 
   const room = useMemo(() => {
@@ -381,6 +393,42 @@ export function IncidentRoomPage() {
                   <StatusBadge status={device.status} />
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Business impact</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Customer-visible services touched by this incident.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {businessImpact.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No mapped business services are affected.
+                </p>
+              ) : (
+                businessImpact.map((entry) => (
+                  <div
+                    key={entry.serviceId}
+                    className="rounded-md border border-border/60 bg-card/60 px-3 py-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-sm font-medium">
+                        {entry.serviceName}
+                      </span>
+                      <Badge variant="warning">
+                        {SERVICE_TIER_LABELS[entry.tier]}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {SERVICE_IMPACT_LABELS[entry.impact]} ·{' '}
+                      {entry.affectedDeviceIds.length} device(s)
+                    </p>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 

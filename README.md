@@ -41,6 +41,12 @@ keys and no paid services.
   **read-only history replay scrubber** that previews any retained sample.
 - **SLA & Uptime** — MTTA/MTTR, fleet/site uptime vs targets, incidents by
   severity and devices falling below the 99.9% target.
+- **Business services (BSM)** — map customer-visible **business services** onto
+  the devices and sites that deliver them, each with a criticality tier (P1–P4)
+  and an impact kind (revenue / regulatory / productivity / internal). The page
+  derives live **service health** and uptime, ranks the **business impact** of an
+  incident (weighted by tier, impact and severity), and feeds a **business-risk**
+  rollup into the dashboard-style summary and the incident **War Room**.
 - **Incidents** — severity levels, affected devices, timestamps, an
   acknowledgement → resolution workflow, auto-resolution and a resolved history.
   New incidents raise **browser notifications** and **in-app toasts**.
@@ -169,7 +175,7 @@ in the browser.
 | 12:20–13:20 | **Automation**                 | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.                                              |
 | 13:20–14:20 | **Time Machine**               | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                                                         |
 | 14:20–15:20 | **Ask NetScope**               | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                                              |
-| 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.                             |
+| 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, **business impact**, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.                             |
 | 16:20–17:20 | **Config drift**               | On **Config Drift** toggle **Drifted only**, read the baseline → running **line diff**, **Edit** the running config, then **Accept as baseline** and roll back a version.                                                                     |
 | 17:20–18:20 | **Executive report**           | On **Reports** choose the **Executive summary** preset, scan the sections, then **Print** it or export **Markdown**/**HTML**.                                                                                                                 |
 | 18:20–19:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                             |
@@ -241,11 +247,11 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, policy, reachability, oncall, configdiff, configs, reports, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, policy, reachability, oncall, configdiff, configs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
-├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs)
+├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs, services)
 ├── test/              # setup + unit tests
 └── types/             # shared domain types
 ```
@@ -297,7 +303,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-429 unit tests across 45 suites cover the pure, high-value logic:
+444 unit tests across 46 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -347,6 +353,9 @@ npm run test          # or: npm run test:coverage
   headline/health rollups, incident ranking, change-log scoping and on-call
   coverage) and Markdown/HTML rendering (self-contained inline-styled document
   with HTML-escaped content and inline SVG sparklines),
+- **business service mapping** (device/site resolution and coverage, tier/impact
+  weighting, live service health and uptime, per-incident business impact and the
+  ranked business-risk rollup),
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation

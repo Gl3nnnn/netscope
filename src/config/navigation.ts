@@ -1,6 +1,7 @@
 import {
   Activity,
   BellRing,
+  Briefcase,
   CalendarClock,
   ClipboardList,
   Clock,
@@ -72,6 +73,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Devices',
     icon: Server,
     description: 'Inventory management',
+  },
+  {
+    to: '/services',
+    label: 'Services',
+    icon: Briefcase,
+    description: 'Business services and impact',
   },
   {
     to: '/performance',
