@@ -34,6 +34,12 @@ keys and no paid services.
   path **redundancy** and rolls it into a 0-100 **resilience score**. A **chaos lab**
   then injects combined faults (core/site outages, link saturation, traffic surges)
   on a cloned, seeded fleet and reports how each **business service** fares.
+- **Compliance & hardening audit** — a dependency-free rule engine grades the fleet
+  against hardening, segmentation, availability and hygiene benchmarks (telnet off,
+  encrypted secrets, blocked root SSH, default-deny firewall, no legacy remote
+  ports, healthy devices…), rolls findings up by severity and category into a
+  compliance score and a weighted risk score, and supports **documented waivers**
+  per rule and device.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -164,26 +170,26 @@ keys and no paid services.
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
 
-| Time        | Stop                           | What to show                                                                                                                                                                                                                                  |
-| ----------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0:00–1:30   | **Dashboard**                  | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                                                                                              |
-| 1:30–3:00   | **Command palette**            | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                                                                                             |
-| 3:00–4:30   | **Device detail**              | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                                                                                           |
-| 4:30–6:00   | **Performance**                | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                                                                                            |
-| 6:00–8:00   | **Fault simulator**            | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover.                                                                         |
-| 8:00–9:00   | **Incidents & SLO**            | Acknowledge an incident, open its matched **runbook**, then **Apply runbook** to auto-recover the fleet. Check the SLA page's **error-budget** card and the header **burn badge**.                                                            |
-| 9:00–9:30   | **RCA & postmortem**           | On Incidents read the ranked **probable root cause** and **Export postmortem** (Markdown/JSON). On Performance toggle the **forecast** projection.                                                                                            |
-| 9:30–10:15  | **Alerts, channels & on-call** | Create a threshold rule with **New rule**, watch it go **Pending → Firing**, see severity-routed **deliveries** on **Notifications**, then set up a team and **rotation** on **On-Call** and read the header on-call badge.                   |
-| 10:15–10:50 | **Monitors & status**          | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                                                                               |
-| 10:50–11:20 | **Explorer & wallboard**       | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                                                |
-| 11:20–12:20 | **Trace, plan & policy**       | On **Path Tracer** trace a route and read the **critical hop** and detour, on **Planner** scale traffic **+100%** and watch utilisation jump, then on **Policy** flip a rule and watch the **reachability matrix** and path explainer update, and on **Resilience** run a chaos experiment against a business service. |
-| 12:20–13:20 | **Automation**                 | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.                                              |
-| 13:20–14:20 | **Time Machine**               | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                                                         |
-| 14:20–15:20 | **Ask NetScope**               | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                                              |
-| 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, **business impact**, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.        |
-| 16:20–17:20 | **Config drift**               | On **Config Drift** toggle **Drifted only**, read the baseline → running **line diff**, **Edit** the running config, then **Accept as baseline** and roll back a version.                                                                     |
-| 17:20–18:20 | **Executive report**           | On **Reports** choose the **Executive summary** preset, scan the sections, then **Print** it or export **Markdown**/**HTML**.                                                                                                                 |
-| 18:20–19:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                             |
+| Time        | Stop                           | What to show                                                                                                                                                                                                                                                                                                           |
+| ----------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0:00–1:30   | **Dashboard**                  | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                                                                                                                                                                       |
+| 1:30–3:00   | **Command palette**            | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                                                                                                                                                                      |
+| 3:00–4:30   | **Device detail**              | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                                                                                                                                                                    |
+| 4:30–6:00   | **Performance**                | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                                                                                                                                                                     |
+| 6:00–8:00   | **Fault simulator**            | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover.                                                                                                                                                  |
+| 8:00–9:00   | **Incidents & SLO**            | Acknowledge an incident, open its matched **runbook**, then **Apply runbook** to auto-recover the fleet. Check the SLA page's **error-budget** card and the header **burn badge**.                                                                                                                                     |
+| 9:00–9:30   | **RCA & postmortem**           | On Incidents read the ranked **probable root cause** and **Export postmortem** (Markdown/JSON). On Performance toggle the **forecast** projection.                                                                                                                                                                     |
+| 9:30–10:15  | **Alerts, channels & on-call** | Create a threshold rule with **New rule**, watch it go **Pending → Firing**, see severity-routed **deliveries** on **Notifications**, then set up a team and **rotation** on **On-Call** and read the header on-call badge.                                                                                            |
+| 10:15–10:50 | **Monitors & status**          | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                                                                                                                                                        |
+| 10:50–11:20 | **Explorer & wallboard**       | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                                                                                                                         |
+| 11:20–12:20 | **Trace, plan & policy**       | On **Path Tracer** trace a route and read the **critical hop** and detour, on **Planner** scale traffic **+100%** and watch utilisation jump, then on **Policy** flip a rule and watch the **reachability matrix** and path explainer update, and on **Resilience** run a chaos experiment against a business service, and on **Compliance** waive a failing finding. |
+| 12:20–13:20 | **Automation**                 | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.                                                                                                                       |
+| 13:20–14:20 | **Time Machine**               | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                                                                                                                                  |
+| 14:20–15:20 | **Ask NetScope**               | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                                                                                                                       |
+| 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, **business impact**, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.                                                                                 |
+| 16:20–17:20 | **Config drift**               | On **Config Drift** toggle **Drifted only**, read the baseline → running **line diff**, **Edit** the running config, then **Accept as baseline** and roll back a version.                                                                                                                                              |
+| 17:20–18:20 | **Executive report**           | On **Reports** choose the **Executive summary** preset, scan the sections, then **Print** it or export **Markdown**/**HTML**.                                                                                                                                                                                          |
+| 18:20–19:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                                                                                                      |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -252,11 +258,11 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
-├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs, services)
+├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs, services, compliance)
 ├── test/              # setup + unit tests
 └── types/             # shared domain types
 ```
@@ -308,7 +314,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-458 unit tests across 47 suites cover the pure, high-value logic:
+468 unit tests across 48 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -328,6 +334,9 @@ npm run test          # or: npm run test:coverage
   isolation sets, redundancy ratio and the blended resilience score) and the
   **chaos sandbox** (clone-only combined-fault simulation, service-outcome
   diffing and preset generation),
+- the **compliance rule engine** (per-type applicability, config/policy/health
+  predicates, category and severity rollups, scoring, waiver keys and weighted
+  risk),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric

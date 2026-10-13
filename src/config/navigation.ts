@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Clock,
   FileCog,
+  FileCheck2,
   FlaskConical,
   Gauge,
   HeartPulse,
@@ -74,6 +75,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Config Drift',
     icon: FileCog,
     description: 'Baseline and running diff',
+  },
+  {
+    to: '/compliance',
+    label: 'Compliance',
+    icon: FileCheck2,
+    description: 'Hardening audit and waivers',
   },
   {
     to: '/devices',

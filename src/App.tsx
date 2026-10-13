@@ -27,6 +27,11 @@ const PolicyPage = lazy(() =>
 const ConfigsPage = lazy(() =>
   import('@/pages/ConfigsPage').then((m) => ({ default: m.ConfigsPage })),
 )
+const CompliancePage = lazy(() =>
+  import('@/pages/CompliancePage').then((m) => ({
+    default: m.CompliancePage,
+  })),
+)
 const ReportsPage = lazy(() =>
   import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 )
@@ -172,6 +177,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <ConfigsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="compliance"
+            element={
+              <ErrorBoundary>
+                <CompliancePage />
               </ErrorBoundary>
             }
           />
