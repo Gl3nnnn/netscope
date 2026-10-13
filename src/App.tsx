@@ -32,6 +32,9 @@ const CompliancePage = lazy(() =>
     default: m.CompliancePage,
   })),
 )
+const ChangesPage = lazy(() =>
+  import('@/pages/ChangesPage').then((m) => ({ default: m.ChangesPage })),
+)
 const ReportsPage = lazy(() =>
   import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 )
@@ -289,6 +292,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <AutomationPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="changes"
+            element={
+              <ErrorBoundary>
+                <ChangesPage />
               </ErrorBoundary>
             }
           />

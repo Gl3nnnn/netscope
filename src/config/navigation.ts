@@ -9,6 +9,7 @@ import {
   FileCheck2,
   FlaskConical,
   Gauge,
+  GitPullRequest,
   HeartPulse,
   History,
   LayoutDashboard,
@@ -147,6 +148,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Automation',
     icon: Workflow,
     description: 'Playbooks and maintenance',
+  },
+  {
+    to: '/changes',
+    label: 'Changes',
+    icon: GitPullRequest,
+    description: 'CAB change management',
   },
   {
     to: '/replay',
