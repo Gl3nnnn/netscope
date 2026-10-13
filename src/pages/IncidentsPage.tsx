@@ -237,47 +237,54 @@ export function IncidentsPage() {
               ) : null}
             </div>
 
-            {incident.status !== 'resolved' ? (
-              <div className="flex gap-2">
-                {runbook.autoRemediable ? (
+            <div className="flex gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link to={`/incidents/${incident.id}`}>
+                  <Waypoints className="size-4" /> War Room
+                </Link>
+              </Button>
+              {incident.status !== 'resolved' ? (
+                <>
+                  {runbook.autoRemediable ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        runRemediation(incident.id)
+                        toast.success(`Runbook applied: ${runbook.title}`)
+                      }}
+                    >
+                      <Wrench className="size-4" /> Apply runbook
+                    </Button>
+                  ) : null}
+                  {incident.status === 'open' ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        acknowledgeIncident(incident.id)
+                        toast.success('Incident acknowledged')
+                      }}
+                    >
+                      <CheckCheck className="size-4" /> Acknowledge
+                    </Button>
+                  ) : null}
                   <Button
-                    variant="secondary"
                     size="sm"
                     onClick={() => {
-                      runRemediation(incident.id)
-                      toast.success(`Runbook applied: ${runbook.title}`)
+                      resolveIncident(incident.id)
+                      toast.success('Incident resolved')
                     }}
                   >
-                    <Wrench className="size-4" /> Apply runbook
+                    <CircleCheck className="size-4" /> Resolve
                   </Button>
-                ) : null}
-                {incident.status === 'open' ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      acknowledgeIncident(incident.id)
-                      toast.success('Incident acknowledged')
-                    }}
-                  >
-                    <CheckCheck className="size-4" /> Acknowledge
-                  </Button>
-                ) : null}
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    resolveIncident(incident.id)
-                    toast.success('Incident resolved')
-                  }}
-                >
-                  <CircleCheck className="size-4" /> Resolve
-                </Button>
-              </div>
-            ) : (
-              <Badge variant="success" className="gap-1">
-                <ShieldCheck className="size-3" /> Resolved
-              </Badge>
-            )}
+                </>
+              ) : (
+                <Badge variant="success" className="gap-1">
+                  <ShieldCheck className="size-3" /> Resolved
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">

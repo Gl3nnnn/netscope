@@ -94,6 +94,12 @@ keys and no paid services.
   about fleet health, a device, a site, incident counts, capacity, a route or
   uptime and get a cited, structured answer built from the same engines as the
   rest of the app — no network calls, no LLM.
+- **Incident command center (War Room)** — open any incident into a dedicated
+  room (`/incidents/:id`) that fuses its matched **runbook**, ranked **probable
+  root causes**, the downstream **blast radius**, incident **key metrics** and a
+  merged **causal timeline** of events and operator notes. Apply the runbook,
+  jump straight to that moment in the **Time Machine**, post a comms update and
+  export the postmortem — all from one screen.
 - **Fault simulator** — press `F` to open a chaos playboard that injects
   transient faults: force a device offline or **saturate** it near capacity,
   or sever a whole site. Faults flow through the same metric walk as organic
@@ -121,28 +127,29 @@ keys and no paid services.
 
 ---
 
-## Demo walkthrough (16 minutes)
+## Demo walkthrough (17 minutes)
 
 A suggested tour for reviewers. No setup is required — every value is simulated
 in the browser.
 
-| Time        | Stop                     | What to show                                                                                                                                                                                                  |
-| ----------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0:00–1:30   | **Dashboard**            | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                                                              |
-| 1:30–3:00   | **Command palette**      | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                                                             |
-| 3:00–4:30   | **Device detail**        | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                                                           |
-| 4:30–6:00   | **Performance**          | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                                                            |
-| 6:00–8:00   | **Fault simulator**      | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover.                                         |
-| 8:00–9:00   | **Incidents & SLO**      | Acknowledge an incident, open its matched **runbook**, then **Apply runbook** to auto-recover the fleet. Check the SLA page's **error-budget** card and the header **burn badge**.                            |
-| 9:00–9:30   | **RCA & postmortem**     | On Incidents read the ranked **probable root cause** and **Export postmortem** (Markdown/JSON). On Performance toggle the **forecast** projection.                                                            |
-| 9:30–10:15  | **Alerts & channels**    | Create a threshold rule with **New rule**, watch it go **Pending → Firing**, then on **Notifications** see severity-routed **deliveries** and tune the **escalation ladder**.                                 |
-| 10:15–10:50 | **Monitors & status**    | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                                               |
-| 10:50–11:20 | **Explorer & wallboard** | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                |
-| 11:20–12:20 | **Trace & plan**         | On **Path Tracer** trace a route and read the **critical hop** and detour, then on **Planner** scale traffic **+100%** and watch utilisation jump, saturation flags appear and the live fleet stay untouched. |
-| 12:20–13:20 | **Automation**           | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.              |
-| 13:20–14:20 | **Time Machine**         | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                         |
-| 14:20–15:20 | **Ask NetScope**         | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                              |
-| 15:20–16:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                             |
+| Time        | Stop                     | What to show                                                                                                                                                                                                      |
+| ----------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0:00–1:30   | **Dashboard**            | The header **Live** chip and fleet KPIs ticking over. Point out the ▲/▼ **trend deltas** on Avg Latency, Packet Loss and Uptime.                                                                                  |
+| 1:30–3:00   | **Command palette**      | Press `Ctrl/Cmd+K`, then type a device name, a site, or an incident title to jump straight there. With an empty box you get navigation + actions.                                                                 |
+| 3:00–4:30   | **Device detail**        | Open any device: the **P95** stat card, the dashed red **P95 reference line** on the latency chart, trend deltas, history charts and activity feed.                                                               |
+| 4:30–6:00   | **Performance**          | Per-device CPU/memory/throughput plus **anomaly markers** flagged by the z-score detector, capacity/headroom, and the **history replay scrubber**.                                                                |
+| 6:00–8:00   | **Fault simulator**      | Press `F` (flask icon). **Saturate** a device or **sever a site**, watch utilisation pin near capacity, incidents open with a toast, and the topology react. Recover.                                             |
+| 8:00–9:00   | **Incidents & SLO**      | Acknowledge an incident, open its matched **runbook**, then **Apply runbook** to auto-recover the fleet. Check the SLA page's **error-budget** card and the header **burn badge**.                                |
+| 9:00–9:30   | **RCA & postmortem**     | On Incidents read the ranked **probable root cause** and **Export postmortem** (Markdown/JSON). On Performance toggle the **forecast** projection.                                                                |
+| 9:30–10:15  | **Alerts & channels**    | Create a threshold rule with **New rule**, watch it go **Pending → Firing**, then on **Notifications** see severity-routed **deliveries** and tune the **escalation ladder**.                                     |
+| 10:15–10:50 | **Monitors & status**    | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                                                   |
+| 10:50–11:20 | **Explorer & wallboard** | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                    |
+| 11:20–12:20 | **Trace & plan**         | On **Path Tracer** trace a route and read the **critical hop** and detour, then on **Planner** scale traffic **+100%** and watch utilisation jump, saturation flags appear and the live fleet stay untouched.     |
+| 12:20–13:20 | **Automation**           | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down.                  |
+| 13:20–14:20 | **Time Machine**         | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                             |
+| 14:20–15:20 | **Ask NetScope**         | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                  |
+| 15:20–16:20 | **War Room**             | On **Incidents** open an incident’s **War Room**: read the ranked root cause, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened. |
+| 16:20–17:00 | **Topology & reset**     | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                 |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -211,11 +218,11 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, playbooks, replay, copilot, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
-├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation)
+├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, notes)
 ├── test/              # setup + unit tests
 └── types/             # shared domain types
 ```
@@ -267,7 +274,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-364 unit tests across 38 suites cover the pure, high-value logic:
+369 unit tests across 39 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -302,6 +309,8 @@ npm run test          # or: npm run test:coverage
   status/metric diffing),
 - **Ask NetScope intent parsing** (fleet/device/site status, counts, ranking by
   metric or health, incidents, capacity, routing and SLO answers),
+- **War Room assembly** (incident runner, causal event/note merge and ordering,
+  root-cause correlation and dependent blast-radius exclusion),
 - elapsed-time/age formatting,
 - **fault resolution** (forced offline, saturation, site cascades, expiry),
 - JSON import/backup validation (valid, invalid, mixed, empty), normalisation

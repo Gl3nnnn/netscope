@@ -35,6 +35,11 @@ const SlaPage = lazy(() =>
 const IncidentsPage = lazy(() =>
   import('@/pages/IncidentsPage').then((m) => ({ default: m.IncidentsPage })),
 )
+const IncidentRoomPage = lazy(() =>
+  import('@/pages/IncidentRoomPage').then((m) => ({
+    default: m.IncidentRoomPage,
+  })),
+)
 const TimelinePage = lazy(() =>
   import('@/pages/TimelinePage').then((m) => ({ default: m.TimelinePage })),
 )
@@ -163,6 +168,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <IncidentsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="incidents/:id"
+            element={
+              <ErrorBoundary>
+                <IncidentRoomPage />
               </ErrorBoundary>
             }
           />
