@@ -6,6 +6,7 @@ import {
   Gauge,
   History,
   LayoutDashboard,
+  Lock,
   Route,
   SearchCode,
   Send,
@@ -50,6 +51,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Planner',
     icon: FlaskConical,
     description: 'What-if capacity planning',
+  },
+  {
+    to: '/policy',
+    label: 'Policy',
+    icon: Lock,
+    description: 'ACL and reachability analysis',
   },
   {
     to: '/devices',
