@@ -13,6 +13,7 @@ import {
   Search,
   Server,
   Sparkles,
+  Waypoints,
   Wrench,
   type LucideIcon,
 } from 'lucide-react'
@@ -147,6 +148,23 @@ function PaletteBody({
         run: () => {
           useNetworkStore.getState().resetDemo()
           toast.success('Demo data reset')
+        },
+      },
+      {
+        id: 'open-warroom',
+        label: 'Open latest War Room',
+        hint: 'Incident command center for the newest incident',
+        icon: Waypoints,
+        group: 'Actions',
+        run: () => {
+          const incident = [...useNetworkStore.getState().incidents].sort(
+            (a, b) => b.createdAt - a.createdAt,
+          )[0]
+          if (!incident) {
+            toast.error('No incidents to command')
+            return
+          }
+          navigate(`/incidents/${incident.id}`)
         },
       },
       {
