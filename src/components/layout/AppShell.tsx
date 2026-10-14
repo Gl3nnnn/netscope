@@ -94,7 +94,7 @@ export function AppShell() {
       </div>
 
       <Dialog open={mobileOpen} onOpenChange={setMobileOpen}>
-        <DialogContent className="left-0 top-0 h-screen max-w-[280px] translate-x-0 translate-y-0 gap-0 rounded-none border-y-0 border-l-0 p-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:rounded-none">
+        <DialogContent className="left-0 top-0 h-screen max-w-[280px] translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-none border-y-0 border-l-0 p-0 data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:rounded-none">
           <DialogHeader className="sr-only">
             <DialogTitle>Navigation</DialogTitle>
           </DialogHeader>

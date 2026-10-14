@@ -134,6 +134,8 @@ export interface Settings {
   incidentFrequency: number
   thresholds: Thresholds
   sidebarCollapsed: boolean
+  /** Per-section open/closed overrides for the collapsible sidebar groups. */
+  navSectionsOpen?: Record<string, boolean>
   /** Maximum number of history samples retained per device. */
   maxHistoryPoints: number
 }

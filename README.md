@@ -170,7 +170,10 @@ keys and no paid services.
 - **Seeded simulations** — every session is driven by a deterministic PRNG seed.
   A share link (`?seed=…`) reproduces a topology; arbitrary strings are hashed
   into seeds.
-- **UX & accessibility** — collapsible sidebar, compact header, mobile drawer,
+- **UX & accessibility** — a **grouped, collapsible sidebar** (Overview, Deep
+  Dive, Plan & Test, Governance, Operations, Response and Insights) that keeps the
+  nav scroll-contained instead of overflowing the page, auto-expands the active
+  section and collapses to an icon rail; plus a compact header, mobile drawer,
   keyboard operability, skip-to-content, `prefers-reduced-motion` support,
   accessible Radix primitives, loading skeletons, empty states and error
   boundaries.

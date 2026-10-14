@@ -18,6 +18,7 @@ export const DEFAULT_SETTINGS: Settings = {
   incidentFrequency: 0.6,
   thresholds: { ...DEFAULT_THRESHOLDS },
   sidebarCollapsed: false,
+  navSectionsOpen: {},
   maxHistoryPoints: 120,
 }
 
@@ -35,6 +36,7 @@ interface SettingsState extends Settings {
   setThreshold: (key: keyof Thresholds, value: number) => void
   setSidebarCollapsed: (collapsed: boolean) => void
   toggleSidebar: () => void
+  setNavSectionOpen: (id: string, open: boolean) => void
   setMaxHistoryPoints: (points: number) => void
   resetSettings: () => void
 }
@@ -48,6 +50,7 @@ function toPersisted(state: SettingsState): Settings {
     incidentFrequency: state.incidentFrequency,
     thresholds: { ...state.thresholds },
     sidebarCollapsed: state.sidebarCollapsed,
+    navSectionsOpen: { ...state.navSectionsOpen },
     maxHistoryPoints: state.maxHistoryPoints,
   }
 }
@@ -70,12 +73,18 @@ export const useSettingsStore = create<SettingsState>()(
         set({ thresholds: { ...get().thresholds, [key]: value } }),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
+      setNavSectionOpen: (id, open) =>
+        set({ navSectionsOpen: { ...get().navSectionsOpen, [id]: open } }),
       setMaxHistoryPoints: (maxHistoryPoints) =>
         set({
           maxHistoryPoints: Math.min(600, Math.max(10, maxHistoryPoints)),
         }),
       resetSettings: () =>
-        set({ ...DEFAULT_SETTINGS, thresholds: { ...DEFAULT_THRESHOLDS } }),
+        set({
+          ...DEFAULT_SETTINGS,
+          thresholds: { ...DEFAULT_THRESHOLDS },
+          navSectionsOpen: {},
+        }),
     }),
     {
       name: 'netscope:settings',
@@ -88,6 +97,7 @@ export const useSettingsStore = create<SettingsState>()(
           ...DEFAULT_SETTINGS,
           ...p,
           thresholds: { ...DEFAULT_THRESHOLDS, ...(p.thresholds ?? {}) },
+          navSectionsOpen: p.navSectionsOpen ?? {},
         }
       },
     },
