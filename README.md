@@ -75,6 +75,12 @@ keys and no paid services.
   **IT vs facility power** (PUE 1.45), **cooling overhead**, **BTU heat**, **kg
   CO2/day** and **$/day**. Per-site and per-device tables plus an efficiency
   **score/grade** (balanced 30-70% load scores highest).
+- **Asset lifecycle** — deterministic end-of-life, end-of-support and warranty
+  tracking. Each device's acquisition date is derived from its id hash and its
+  type's support/warranty window, producing **age**, **days-to-EOL** and
+  **days-to-warranty**, a **status** (active / approaching EOL / EOL), a
+  **risk score** (EOL + warranty weighted) and a **refresh queue**. The assets
+  table is sorted by risk with a status badge and a per-device risk bar.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -352,7 +358,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-562 unit tests across 55 suites cover the pure, high-value logic:
+575 unit tests across 56 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -390,6 +396,8 @@ npm run test          # or: npm run test:coverage
   free-space maths, VLAN catalog joining and deterministic ledger seeding),
 - **environment** power/heat/carbon/cost modelling (load-driven wattage, PUE
   facility rollup, per-site carbon ranking and the efficiency score/grade),
+- **asset lifecycle** (age/EOL/warranty day counters, status thresholds, the
+  EOL+warranty risk score, refresh-queue filtering and summary rollups),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
