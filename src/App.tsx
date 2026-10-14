@@ -16,6 +16,9 @@ const GeoPage = lazy(() =>
 const FlowsPage = lazy(() =>
   import('@/pages/FlowsPage').then((m) => ({ default: m.FlowsPage })),
 )
+const IpamPage = lazy(() =>
+  import('@/pages/IpamPage').then((m) => ({ default: m.IpamPage })),
+)
 const TracerPage = lazy(() =>
   import('@/pages/TracerPage').then((m) => ({ default: m.TracerPage })),
 )
@@ -162,6 +165,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <FlowsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="ipam"
+            element={
+              <ErrorBoundary>
+                <IpamPage />
               </ErrorBoundary>
             }
           />

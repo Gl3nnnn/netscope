@@ -62,6 +62,13 @@ keys and no paid services.
   connected peer) derived deterministically from its type profile. The device
   detail page shows an **Interfaces** card with up/err-disabled/down badges and a
   utilisation bar per port.
+- **IP address management (IPAM)** — a CIDR-aware ledger of **subnets, VLANs and
+  IP allocations** with pure arithmetic helpers (`ipToLong`/`longToIp`,
+  `parseCidr`, `cidrOverlaps`). It computes per-subnet **utilisation** and
+  **free-space**, flags **overlapping address ranges** as conflicts, and joins a
+  **VLAN catalog** to its subnet with a live utilisation badge. The seeded ledger
+  derives two `/24`s (user + server) per site and persists edits to
+  `netscope:ipam`.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -339,7 +346,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-528 unit tests across 53 suites cover the pure, high-value logic:
+544 unit tests across 54 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -373,6 +380,8 @@ npm run test          # or: npm run test:coverage
   matrix and heavy-hitter detection),
 - the **interface inventory** (per-port layout by device type, admin/oper state,
   error counters, throughput distribution and utilisation),
+- **IPAM** (CIDR parsing, address-range overlap detection, subnet utilisation and
+  free-space maths, VLAN catalog joining and deterministic ledger seeding),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
