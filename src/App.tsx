@@ -27,6 +27,9 @@ const EnvironmentPage = lazy(() =>
 const LifecyclePage = lazy(() =>
   import('@/pages/LifecyclePage').then((m) => ({ default: m.LifecyclePage })),
 )
+const SecurityPage = lazy(() =>
+  import('@/pages/SecurityPage').then((m) => ({ default: m.SecurityPage })),
+)
 const TracerPage = lazy(() =>
   import('@/pages/TracerPage').then((m) => ({ default: m.TracerPage })),
 )
@@ -197,6 +200,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <LifecyclePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="security"
+            element={
+              <ErrorBoundary>
+                <SecurityPage />
               </ErrorBoundary>
             }
           />

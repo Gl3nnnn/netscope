@@ -196,6 +196,20 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    id: 'security',
+    label: 'Security',
+    icon: ShieldAlert,
+    defaultOpen: true,
+    items: [
+      {
+        to: '/security',
+        label: 'Security Ops',
+        icon: ShieldAlert,
+        description: 'SOC detections & ATT&CK',
+      },
+    ],
+  },
+  {
     id: 'operations',
     label: 'Operations',
     icon: ServerCog,

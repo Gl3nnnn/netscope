@@ -81,6 +81,13 @@ keys and no paid services.
   **days-to-warranty**, a **status** (active / approaching EOL / EOL), a
   **risk score** (EOL + warranty weighted) and a **refresh queue**. The assets
   table is sorted by risk with a status badge and a per-device risk bar.
+- **Security operations** — a deterministic SOC engine that derives MITRE
+  ATT&CK detections (brute force, port scans, DoS, C2, exfiltration, sniffing)
+  from the live fleet, flows and geography, each with a confidence, kill-chain
+  phase and severity. The Security page shows an **ATT&CK heat map**, a
+  **threat feed** with per-event **Contain** / **False positive** triage
+  (containment raises a real timeline incident), a **top-targeted** panel and a
+  **security score/grade** rollup.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -302,11 +309,11 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
-├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs, services, compliance, changes)
+├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs, services, compliance, changes, security)
 ├── test/              # setup + unit tests
 └── types/             # shared domain types
 ```
@@ -358,7 +365,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-575 unit tests across 56 suites cover the pure, high-value logic:
+590 unit tests across 57 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -398,6 +405,9 @@ npm run test          # or: npm run test:coverage
   facility rollup, per-site carbon ranking and the efficiency score/grade),
 - **asset lifecycle** (age/EOL/warranty day counters, status thresholds, the
   EOL+warranty risk score, refresh-queue filtering and summary rollups),
+- the **security detection engine** (MITRE ATT&CK technique detectors over
+  fleet/flow/geo, confidence and severity scoring, disposition merging,
+  the ATT&CK heat map, top-target ranking and the score/grade rollup),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
