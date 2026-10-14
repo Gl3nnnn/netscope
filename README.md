@@ -69,6 +69,12 @@ keys and no paid services.
   **VLAN catalog** to its subnet with a live utilisation badge. The seeded ledger
   derives two `/24`s (user + server) per site and persists edits to
   `netscope:ipam`.
+- **Environment** — deterministic power, heat, carbon and energy-cost modelling.
+  Each device's draw is interpolated between an idle and a peak wattage from its
+  type profile using a live CPU/throughput **load factor**, then rolled up into
+  **IT vs facility power** (PUE 1.45), **cooling overhead**, **BTU heat**, **kg
+  CO2/day** and **$/day**. Per-site and per-device tables plus an efficiency
+  **score/grade** (balanced 30-70% load scores highest).
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -346,7 +352,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-544 unit tests across 54 suites cover the pure, high-value logic:
+562 unit tests across 55 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -382,6 +388,8 @@ npm run test          # or: npm run test:coverage
   error counters, throughput distribution and utilisation),
 - **IPAM** (CIDR parsing, address-range overlap detection, subnet utilisation and
   free-space maths, VLAN catalog joining and deterministic ledger seeding),
+- **environment** power/heat/carbon/cost modelling (load-driven wattage, PUE
+  facility rollup, per-site carbon ranking and the efficiency score/grade),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
