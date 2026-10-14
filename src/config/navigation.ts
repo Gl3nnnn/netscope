@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Lock,
+  Network,
   Route,
   Scale,
   SearchCode,
@@ -96,7 +97,14 @@ export const NAV_SECTIONS: NavSection[] = [
     label: 'Deep Dive',
     icon: Telescope,
     defaultOpen: true,
-    items: [],
+    items: [
+      {
+        to: '/flows',
+        label: 'Flows',
+        icon: Network,
+        description: 'Flow & application analytics',
+      },
+    ],
   },
   {
     id: 'plan-test',

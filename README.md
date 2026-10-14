@@ -52,6 +52,11 @@ keys and no paid services.
   latency**, and rolls live health, device counts and worst status into markers.
   A site roster adds health bars and nearest-site distance (haversine), plus
   longest-link and nearest-pair panels for capacity planning.
+- **Flow & application analytics** — a NetFlow-style engine that deterministically
+  splits each device's throughput across applications, peers and directions.
+  Surface **top talkers**, an **application mix**, top **conversations**, an
+  **east-west vs north-south** split, **heavy hitters** (>2× an application's
+  mean) and a **site-to-site traffic-matrix heatmap**.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -273,7 +278,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -329,7 +334,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-496 unit tests across 50 suites cover the pure, high-value logic:
+518 unit tests across 52 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -358,6 +363,9 @@ npm run test          # or: npm run test:coverage
 - the **geographic projection** (equirectangular site coordinates with a
   deterministic hash fallback, cross-site link rollup, haversine distances and
   the worst-region / slowest-link summary),
+- the **flow engine** (deterministic per-device flow generation, application and
+  conversation aggregation, east-west vs north-south split, the site×site traffic
+  matrix and heavy-hitter detection),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
