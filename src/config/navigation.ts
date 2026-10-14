@@ -10,6 +10,7 @@ import {
   FlaskConical,
   Gauge,
   GitPullRequest,
+  Globe2,
   HeartPulse,
   History,
   LayoutDashboard,
@@ -46,6 +47,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Topology',
     icon: Share2,
     description: 'Interactive network map',
+  },
+  {
+    to: '/geo',
+    label: 'Geo Map',
+    icon: Globe2,
+    description: 'Sites on a world map',
   },
   {
     to: '/tracer',

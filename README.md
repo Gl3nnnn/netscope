@@ -46,6 +46,12 @@ keys and no paid services.
   branches). Deterministic **risk scoring** blends scope, change type and impacted
   service tier; the CAB queue, **schedule-conflict** detection, overdue tracking and
   **drift-based post-implementation verification** keep changes safe.
+- **Geographic operations map** — a dependency-free world map that projects every
+  site equirectangularly (curated coordinates for the seeded sites, deterministic
+  hash fallback for custom ones), draws **cross-site topology arcs coloured by
+  latency**, and rolls live health, device counts and worst status into markers.
+  A site roster adds health bars and nearest-site distance (haversine), plus
+  longest-link and nearest-pair panels for capacity planning.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -189,13 +195,13 @@ in the browser.
 | 10:15–10:50 | **Monitors & status**          | Add a synthetic monitor on **Monitors**, then open the public **Status** page (`/status`) to show the chrome-less uptime board.                                                                                                                                                                                                                                       |
 | 10:50–11:20 | **Explorer & wallboard**       | On **Explorer** run `type:router latency>50` and overlay series, then press `W` to leave it on the rotating **NOC wallboard**.                                                                                                                                                                                                                                        |
 | 11:20–12:20 | **Trace, plan & policy**       | On **Path Tracer** trace a route and read the **critical hop** and detour, on **Planner** scale traffic **+100%** and watch utilisation jump, then on **Policy** flip a rule and watch the **reachability matrix** and path explainer update, and on **Resilience** run a chaos experiment against a business service, and on **Compliance** waive a failing finding. |
-| 12:20–13:20 | **Automation**                 | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down, and on **Changes** raise a request, approve it and take it through to verification.                                                                                                                                                                      |
+| 12:20–13:20 | **Automation**                 | On **Automation** create a playbook (e.g. offline → apply runbook), fault a device and watch the run appear in **Recent runs**, then add a **maintenance window** and see the device quiet down, and on **Changes** raise a request, approve it and take it through to verification.                                                                                  |
 | 13:20–14:20 | **Time Machine**               | On **Replay** scrub the fleet timeline, **play** back through a fault, **jump to** when an incident opened, and read the **change vs previous frame** diff and biggest metric movers.                                                                                                                                                                                 |
 | 14:20–15:20 | **Ask NetScope**               | On **Ask NetScope** (or `Ctrl/Cmd+K` → Ask NetScope) type “which devices are the worst?” then “how do I get from … to …” and follow the cited devices and route.                                                                                                                                                                                                      |
 | 15:20–16:20 | **War Room**                   | On **Incidents** open an incident’s **War Room**: read the ranked root cause, **business impact**, blast radius and merged **causal timeline**, post a comms update, **Apply runbook**, then **Time Machine** jumps to when it opened.                                                                                                                                |
 | 16:20–17:20 | **Config drift**               | On **Config Drift** toggle **Drifted only**, read the baseline → running **line diff**, **Edit** the running config, then **Accept as baseline** and roll back a version.                                                                                                                                                                                             |
 | 17:20–18:20 | **Executive report**           | On **Reports** choose the **Executive summary** preset, scan the sections, then **Print** it or export **Markdown**/**HTML**.                                                                                                                                                                                                                                         |
-| 18:20–19:00 | **Topology & reset**           | Pan/zoom the map, select a node to see its **blast radius**, then **Reset demo** in Settings to reseed the fleet.                                                                                                                                                                                                                                                     |
+| 18:20–19:00 | **Topology, geo & reset**     | On **Geo Map** pick a site marker on the world map and read its health, then pan/zoom the **Topology** map, select a node to see its **blast radius**, and **Reset demo** in Settings to reseed the fleet.                                                                                                |
 
 Handy shortcuts: `Ctrl/Cmd+K` palette · `?` help · `T` theme · `P` pause/resume ·
 `F` fault simulator · `A` alerts · `W` wallboard.
@@ -264,7 +270,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -320,7 +326,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-482 unit tests across 49 suites cover the pure, high-value logic:
+496 unit tests across 50 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -346,6 +352,9 @@ npm run test          # or: npm run test:coverage
 - the **change workflow** (state-transition legality, approver stamping, risk
   scoring from scope/type/service tier, window states, overdue detection, schedule
   conflicts, the approval queue and drift-based verification),
+- the **geographic projection** (equirectangular site coordinates with a
+  deterministic hash fallback, cross-site link rollup, haversine distances and
+  the worst-region / slowest-link summary),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric

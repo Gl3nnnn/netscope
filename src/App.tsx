@@ -10,6 +10,9 @@ const DashboardPage = lazy(() =>
 const TopologyPage = lazy(() =>
   import('@/pages/TopologyPage').then((m) => ({ default: m.TopologyPage })),
 )
+const GeoPage = lazy(() =>
+  import('@/pages/GeoPage').then((m) => ({ default: m.GeoPage })),
+)
 const TracerPage = lazy(() =>
   import('@/pages/TracerPage').then((m) => ({ default: m.TracerPage })),
 )
@@ -140,6 +143,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <TopologyPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="geo"
+            element={
+              <ErrorBoundary>
+                <GeoPage />
               </ErrorBoundary>
             }
           />
