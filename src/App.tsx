@@ -30,6 +30,9 @@ const LifecyclePage = lazy(() =>
 const SecurityPage = lazy(() =>
   import('@/pages/SecurityPage').then((m) => ({ default: m.SecurityPage })),
 )
+const RoutingPage = lazy(() =>
+  import('@/pages/RoutingPage').then((m) => ({ default: m.RoutingPage })),
+)
 const TracerPage = lazy(() =>
   import('@/pages/TracerPage').then((m) => ({ default: m.TracerPage })),
 )
@@ -208,6 +211,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <SecurityPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="routing"
+            element={
+              <ErrorBoundary>
+                <RoutingPage />
               </ErrorBoundary>
             }
           />

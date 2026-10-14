@@ -88,6 +88,13 @@ keys and no paid services.
   **threat feed** with per-event **Contain** / **False positive** triage
   (containment raises a real timeline incident), a **top-targeted** panel and a
   **security score/grade** rollup.
+- **Routing intelligence** — a deterministic control plane over the derived
+  topology: **autonomous systems** (local + peer), **BGP peering sessions** with
+  per-session state and prefix counts, **OSPF areas** and adjacency state, and a
+  **shortest-path routing table** per router (Dijkstra over the OSPF graph) with
+  connected/OSPF/BGP/static prefixes, admin distance and metrics. The Routing
+  page surfaces **control-plane issues** (downed BGP, degraded OSPF, suboptimal
+  paths, flaps, blackholes), a **convergence timeline** and a **health score**.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -309,7 +316,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -365,7 +372,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-590 unit tests across 57 suites cover the pure, high-value logic:
+598 unit tests across 59 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -408,6 +415,9 @@ npm run test          # or: npm run test:coverage
 - the **security detection engine** (MITRE ATT&CK technique detectors over
   fleet/flow/geo, confidence and severity scoring, disposition merging,
   the ATT&CK heat map, top-target ranking and the score/grade rollup),
+- the **routing intelligence engine** (deterministic BGP sessions, OSPF areas
+  and adjacency state, Dijkstra-derived routing tables, suboptimal-path and
+  blackhole detection, convergence timelines and control-plane health),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric

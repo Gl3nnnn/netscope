@@ -125,6 +125,12 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Package,
         description: 'EOL & refresh planning',
       },
+      {
+        to: '/routing',
+        label: 'Routing',
+        icon: Waypoints,
+        description: 'BGP, OSPF & route tables',
+      },
     ],
   },
   {
