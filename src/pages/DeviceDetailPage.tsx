@@ -46,6 +46,13 @@ import {
 } from '@/lib/health'
 import { utilizationPct } from '@/lib/capacity'
 import { saturationForecast } from '@/lib/forecast'
+import {
+  buildInterfaces,
+  downPorts,
+  errorPorts,
+  interfaceSummary,
+  portUtilization,
+} from '@/lib/interfaces'
 import { percentile } from '@/lib/percentile'
 import { seriesTrend, trendLabel } from '@/lib/trend'
 import {
@@ -95,6 +102,12 @@ export function DeviceDetailPage() {
         .slice(0, 12),
     [events, id],
   )
+
+  const interfaces = useMemo(() => {
+    if (!device) return []
+    const all = useNetworkStore.getState().devices
+    return buildInterfaces(device, all)
+  }, [device])
 
   const p95Latency = useMemo(
     () =>
@@ -548,6 +561,84 @@ export function DeviceDetailPage() {
           </div>
         </>
       )}
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>Interfaces</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {(() => {
+              const summary = interfaceSummary(interfaces)
+              return `${summary.up}/${summary.total} up · ${summary.errDisabled} err-disabled · ${summary.withErrors} with errors · ${formatMbps(summary.totalSpeedMbps)} total speed`
+            })()}
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-1.5">
+          {interfaces.length === 0 ? (
+            <p className="py-4 text-center text-sm text-muted-foreground">
+              No interfaces.
+            </p>
+          ) : (
+            interfaces.slice(0, 12).map((iface) => {
+              const util = portUtilization(iface)
+              return (
+                <div
+                  key={iface.id}
+                  className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-2.5 py-1.5 text-sm"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <StatusBadge
+                      status={
+                        iface.operStatus === 'up'
+                          ? 'online'
+                          : iface.operStatus === 'err-disabled'
+                            ? 'offline'
+                            : 'degraded'
+                      }
+                    />
+                    <span className="font-mono text-xs">{iface.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      vlan {iface.vlan}
+                    </span>
+                    {errorPorts([iface]).length > 0 ||
+                    downPorts([iface]).length > 0 ? (
+                      <Badge
+                        variant={
+                          iface.operStatus === 'err-disabled'
+                            ? 'destructive'
+                            : 'secondary'
+                        }
+                        className="text-[10px]"
+                      >
+                        {iface.operStatus === 'err-disabled'
+                          ? 'err-disabled'
+                          : 'down'}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    <span className="w-20 text-right text-xs tabular-nums text-muted-foreground">
+                      {formatMbps(iface.throughputMbps)}
+                    </span>
+                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={cn(
+                          'h-full',
+                          util > 80
+                            ? 'bg-destructive'
+                            : util > 50
+                              ? 'bg-warning'
+                              : 'bg-success',
+                        )}
+                        style={{ width: `${Math.round(util)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>

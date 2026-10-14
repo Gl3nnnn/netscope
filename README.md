@@ -57,6 +57,11 @@ keys and no paid services.
   Surface **top talkers**, an **application mix**, top **conversations**, an
   **east-west vs north-south** split, **heavy hitters** (>2× an application's
   mean) and a **site-to-site traffic-matrix heatmap**.
+- **Interface / port inventory** — every device is broken into per-port state
+  (name, line speed, admin/oper status, duplex, VLAN, error/CRC counters and
+  connected peer) derived deterministically from its type profile. The device
+  detail page shows an **Interfaces** card with up/err-disabled/down badges and a
+  utilisation bar per port.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -278,7 +283,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -334,7 +339,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-518 unit tests across 52 suites cover the pure, high-value logic:
+528 unit tests across 53 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -366,6 +371,8 @@ npm run test          # or: npm run test:coverage
 - the **flow engine** (deterministic per-device flow generation, application and
   conversation aggregation, east-west vs north-south split, the site×site traffic
   matrix and heavy-hitter detection),
+- the **interface inventory** (per-port layout by device type, admin/oper state,
+  error counters, throughput distribution and utilisation),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
