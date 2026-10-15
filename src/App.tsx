@@ -91,6 +91,9 @@ const ChangesPage = lazy(() =>
 const RecoveryPage = lazy(() =>
   import('@/pages/RecoveryPage').then((m) => ({ default: m.RecoveryPage })),
 )
+const FinopsPage = lazy(() =>
+  import('@/pages/FinopsPage').then((m) => ({ default: m.FinopsPage })),
+)
 const ReportsPage = lazy(() =>
   import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 )
@@ -519,6 +522,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <RecoveryPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="finops"
+            element={
+              <ErrorBoundary>
+                <FinopsPage />
               </ErrorBoundary>
             }
           />

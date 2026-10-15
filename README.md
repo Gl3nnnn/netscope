@@ -125,6 +125,14 @@ keys and no paid services.
   RTO breaches; the **Run DR drill** action exercises all P1/P2 jobs, files a
   CAB change and writes a timeline event, with the drill history kept in the
   store.
+- **FinOps** — one **cost ledger** for every simulated dollar: WAN circuit spend
+  (wan.ts), facility power (environment.ts), the amortised **lifecycle refresh
+  pipeline** (lifecycle.ts) and a seeded per-device software-licence estate.
+  The view budgets the fleet (per-device anchor), shows **spend by category and
+  site**, a trailing 12-month **sparkline**, a 12-month growth **forecast** and
+  ranked **savings recommendations** — circuit right-sizing (demand vs
+  provisioned bandwidth), decommissioning idle refresh-queued devices, and
+  licence consolidation.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -402,7 +410,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -458,7 +466,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-933 unit tests across 70 suites cover the pure, high-value logic:
+946 unit tests across 71 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -534,6 +542,9 @@ npm run test          # or: npm run test:coverage
 - the **DR engine** (backup-job seeding, kind-derived RPO and tier-derived RTO
   targets, per-tick run simulation, restore testing, drill records and
   fail/stale/RPO/RTO finding rules),
+- the **FinOps engine** (cross-source cost ledger, per-site rollups, budget
+  variance, 12-month forecast, and savings recommendations over circuits,
+  idle devices and licences),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),
