@@ -103,6 +103,13 @@ keys and no paid services.
   exploited), **patch-compliance %**, overdue tracking, a **no-vendor-patch**
   escalation list and **Patch / Accept risk / Reopen** actions that persist and
   write real timeline events.
+- **Access Control (NAC)** — a simulated **802.1X estate**: per-device endpoints
+  plus shared guests authenticating via **EAP-TLS, PEAP, MAB or the guest portal**,
+  each carrying four **posture checks** (disk encryption, OS patch level, AV agent,
+  host firewall) where unmanaged hardware (IoT, printers, cameras) realistically
+  fails. The page tracks **posture compliance %**, **auth-failure storms**,
+  MAB-only servers, guest overstay, EAP-TLS adoption — and **Quarantine / Release**
+  actions that persist across reloads and write device events to the timeline.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -380,7 +387,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -436,7 +443,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-883 unit tests across 67 suites cover the pure, high-value logic:
+897 unit tests across 68 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -503,6 +510,9 @@ npm run test          # or: npm run test:coverage
 - the **voice quality engine** (E-model delay/loss impairment per codec, MOS
   grading and quality buckets, trunk-to-circuit binding, budget findings and
   sliding site MOS history),
+- the **NAC engine** (endpoint generation, auth-method assignment, posture
+  evaluation with hardware exemptions, quarantine overlays, finding rules and
+  fleet compliance rollups),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),
