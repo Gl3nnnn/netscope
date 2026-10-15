@@ -99,6 +99,9 @@ const CarrierBillingPage = lazy(() =>
     default: m.CarrierBillingPage,
   })),
 )
+const FacilityPage = lazy(() =>
+  import('@/pages/FacilityPage').then((m) => ({ default: m.FacilityPage })),
+)
 const ReportsPage = lazy(() =>
   import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 )
@@ -247,6 +250,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <EnvironmentPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="facility"
+            element={
+              <ErrorBoundary>
+                <FacilityPage />
               </ErrorBoundary>
             }
           />

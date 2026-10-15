@@ -141,6 +141,13 @@ keys and no paid services.
   **invoice mismatches** as recoverable amounts, dispute findings and a
   per-carrier rollup — the CFO-facing money-owed view that complements FinOps
   spend.
+- **Facility Sensors** — the **DCIM sensor layer** environment.ts was missing:
+  per-site CRAC supply and hot-aisle return **temperature**, **humidity**,
+  sub-floor **leak**, **smoke** and **door-contact** sensors, banded by
+  ASHRAE (18–27 °C, 40–60 %RH). Readings drift deterministically per tick;
+  breaches become graded findings (leak/smoke critical, hot spots high,
+  over-cooling/humidity medium, door-open low) with hot-spot detection
+  correlated against live facility watts.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -418,7 +425,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling, facility
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -474,7 +481,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-959 unit tests across 72 suites cover the pure, high-value logic:
+973 unit tests across 73 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -556,6 +563,9 @@ npm run test          # or: npm run test:coverage
 - the **carrier-billing engine** (tiered SLA-credit table, seeded
   invoice/credit discrepancies, recoverable-amount maths, dispute findings and
   per-carrier rollups),
+- the **facility sensor engine** (per-site sensor generation, ASHRAE-band
+  readings, leak/smoke/door state flips, graded environmental findings and
+  site status rollups),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),

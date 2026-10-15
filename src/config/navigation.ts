@@ -45,6 +45,7 @@ import {
   Siren,
   Sparkles,
   Telescope,
+  Thermometer,
   Waypoints,
   Wifi,
   Workflow,
@@ -130,6 +131,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Environment',
         icon: Leaf,
         description: 'Power, heat & carbon',
+      },
+      {
+        to: '/facility',
+        label: 'Facility Sensors',
+        icon: Thermometer,
+        description: 'Temp, humidity & environmental',
       },
       {
         to: '/lifecycle',
