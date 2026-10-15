@@ -23,6 +23,7 @@ import {
   Route,
   Router,
   Scale,
+  ScrollText,
   SearchCode,
   Send,
   Server,
@@ -325,6 +326,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Explorer',
         icon: SearchCode,
         description: 'Query and overlay metrics',
+      },
+      {
+        to: '/logs',
+        label: 'Logs',
+        icon: ScrollText,
+        description: 'Syslog stream and patterns',
       },
       {
         to: '/reports',

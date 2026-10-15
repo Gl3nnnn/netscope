@@ -109,6 +109,9 @@ const AlertsPage = lazy(() =>
 const ExplorerPage = lazy(() =>
   import('@/pages/ExplorerPage').then((m) => ({ default: m.ExplorerPage })),
 )
+const LogsPage = lazy(() =>
+  import('@/pages/LogsPage').then((m) => ({ default: m.LogsPage })),
+)
 const MonitorsPage = lazy(() =>
   import('@/pages/MonitorsPage').then((m) => ({ default: m.MonitorsPage })),
 )
@@ -380,6 +383,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <ExplorerPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="logs"
+            element={
+              <ErrorBoundary>
+                <LogsPage />
               </ErrorBoundary>
             }
           />

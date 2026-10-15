@@ -116,6 +116,13 @@ keys and no paid services.
   reliability, latency and price. The WAN page ranks carriers, tracks **redundancy
   (sites with a diverse backup)** and raises findings for **SLA breaches,
   single-homed sites, degraded backups, capacity pressure and cost outliers**.
+- **Logs** — a simulated **syslog tail** blending the live timeline event stream
+  with per-device application lines (auth, BGP/OSPF, TLS, DHCP, config, audit),
+  **pattern clustering** that fingerprints messages after normalising IPs, MACs
+  and numbers, a **severity histogram** over the last 30 minutes, level/source
+  summaries and a small **query language** (`level:error site:hq facility:bgp
+device:rtr free text`). The stream can be **paused/frozen** while you read and
+  resumes with the next tick.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -338,7 +345,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, wireless, wan, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -394,7 +401,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-748 unit tests across 61 suites cover the pure, high-value logic:
+784 unit tests across 62 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -449,6 +456,9 @@ npm run test          # or: npm run test:coverage
 - the **WAN/carrier engine** (circuit planning per site, contracted vs measured
   availability maths, cost-per-Mbps, the blended carrier scorecard, redundancy
   and capacity/SLA findings),
+- the **log analytics engine** (deterministic syslog generation from timeline
+  events, pattern fingerprinting with token normalisation, severity histograms,
+  level/facility summaries and the level/site/device/facility query language),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
