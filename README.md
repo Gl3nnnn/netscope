@@ -131,6 +131,12 @@ keys and no paid services.
   reliability, latency and price. The WAN page ranks carriers, tracks **redundancy
   (sites with a diverse backup)** and raises findings for **SLA breaches,
   single-homed sites, degraded backups, capacity pressure and cost outliers**.
+- **Digital Experience** — synthetic **user journeys** (VPN, mail, checkout,
+  payments and DNS) run from every site every simulated minute with a **per-phase
+  waterfall** (DNS → TCP → TLS → HTTP), seeded **jitter and failure rolls**, standard
+  **Apdex scoring** (T = 300 ms), **30-minute availability** and latency sparklines,
+  per-site rollups with worst-status ordering, and a fleet **experience score**
+  blending Apdex and availability. Failing checks list the phase that broke.
 - **Logs** — a simulated **syslog tail** blending the live timeline event stream
   with per-device application lines (auth, BGP/OSPF, TLS, DHCP, config, audit),
   **pattern clustering** that fingerprints messages after normalising IPs, MACs
@@ -367,11 +373,11 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
-├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs, services, compliance, changes, security)
+├── store/             # Zustand stores (settings, network, alerts, monitors, channels, automation, policy, oncall, notes, configs, services, compliance, changes, security, notifications, ipam, replay, vuln, problem, cert)
 ├── test/              # setup + unit tests
 └── types/             # shared domain types
 ```
@@ -423,7 +429,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-845 unit tests across 65 suites cover the pure, high-value logic:
+862 unit tests across 66 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -484,6 +490,9 @@ npm run test          # or: npm run test:coverage
 - the **WAN/carrier engine** (circuit planning per site, contracted vs measured
   availability maths, cost-per-Mbps, the blended carrier scorecard, redundancy
   and capacity/SLA findings),
+- the **digital experience engine** (synthetic journey waterfalls, seeded jitter
+  and failure rolls, Apdex/status thresholds, sliding availability windows and
+  site/fleet rollups),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),

@@ -128,6 +128,11 @@ const LogsPage = lazy(() =>
 const MonitorsPage = lazy(() =>
   import('@/pages/MonitorsPage').then((m) => ({ default: m.MonitorsPage })),
 )
+const ExperiencePage = lazy(() =>
+  import('@/pages/ExperiencePage').then((m) => ({
+    default: m.ExperiencePage,
+  })),
+)
 const StatusPage = lazy(() =>
   import('@/pages/StatusPage').then((m) => ({ default: m.StatusPage })),
 )
@@ -436,6 +441,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <MonitorsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="experience"
+            element={
+              <ErrorBoundary>
+                <ExperiencePage />
               </ErrorBoundary>
             }
           />
