@@ -131,6 +131,12 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: Waypoints,
         description: 'BGP, OSPF & route tables',
       },
+      {
+        to: '/qos',
+        label: 'QoS',
+        icon: Gauge,
+        description: 'Classes, DSCP & queue health',
+      },
     ],
   },
   {

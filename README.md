@@ -95,6 +95,13 @@ keys and no paid services.
   connected/OSPF/BGP/static prefixes, admin distance and metrics. The Routing
   page surfaces **control-plane issues** (downed BGP, degraded OSPF, suboptimal
   paths, flaps, blackholes), a **convergence timeline** and a **health score**.
+- **Quality of Service** — a class-based marking engine that sorts every flow
+  into **realtime / interactive / transactional / bulk / best-effort** with
+  **DSCP codepoints** (EF, AF41, AF21, CS1, BE) and weighted-fair **queue
+  allocations**. The QoS page reports per-class **share, utilisation-vs-allocation
+  and tail drops**, detects **starved classes** and **priority inversion**, and
+  offers a **clone-only what-if reshaper** that evaluates candidate weight
+  policies (voice-first, batch-friendly, equal-share) without touching state.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -214,7 +221,8 @@ keys and no paid services.
   A share link (`?seed=…`) reproduces a topology; arbitrary strings are hashed
   into seeds.
 - **UX & accessibility** — a **grouped, collapsible sidebar** (Overview, Deep
-  Dive, Plan & Test, Governance, Operations, Response and Insights) that keeps the
+  Dive, Plan & Test, Governance, Security, Operations, Response and Insights)
+  that keeps the
   nav scroll-contained instead of overflowing the page, auto-expands the active
   section and collapses to an icon rail; plus a compact header, mobile drawer,
   keyboard operability, skip-to-content, `prefers-reduced-motion` support,
@@ -316,7 +324,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -372,7 +380,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-598 unit tests across 59 suites cover the pure, high-value logic:
+658 unit tests across 59 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -418,6 +426,9 @@ npm run test          # or: npm run test:coverage
 - the **routing intelligence engine** (deterministic BGP sessions, OSPF areas
   and adjacency state, Dijkstra-derived routing tables, suboptimal-path and
   blackhole detection, convergence timelines and control-plane health),
+- the **QoS engine** (application→class classification, DSCP marking and
+  weighted-fair allocation, tail-drop maths, starvation and priority-inversion
+  detection, policy scoring and the clone-only what-if reshaper),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
