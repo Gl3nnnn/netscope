@@ -229,6 +229,19 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    id: 'transport',
+    label: 'Transport',
+    icon: Network,
+    items: [
+      {
+        to: '/wan',
+        label: 'WAN & Carriers',
+        icon: Network,
+        description: 'Circuits, SLAs & redundancy',
+      },
+    ],
+  },
+  {
     id: 'operations',
     label: 'Operations',
     icon: ServerCog,

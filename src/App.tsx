@@ -39,6 +39,9 @@ const QosPage = lazy(() =>
 const WirelessPage = lazy(() =>
   import('@/pages/WirelessPage').then((m) => ({ default: m.WirelessPage })),
 )
+const WanPage = lazy(() =>
+  import('@/pages/WanPage').then((m) => ({ default: m.WanPage })),
+)
 const TracerPage = lazy(() =>
   import('@/pages/TracerPage').then((m) => ({ default: m.TracerPage })),
 )
@@ -241,6 +244,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <WirelessPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="wan"
+            element={
+              <ErrorBoundary>
+                <WanPage />
               </ErrorBoundary>
             }
           />

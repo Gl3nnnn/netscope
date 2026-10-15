@@ -109,6 +109,13 @@ keys and no paid services.
   **RSSI/SNR** and weak-client ratios, **rogue-AP detection** with confidence
   scoring, per-site **coverage planning** (APs deployed vs required) and a
   severity-ranked findings feed with a **wireless health score**.
+- **WAN & carriers** — simulated wide-area circuits per site (**DIA, MPLS,
+  business broadband, LTE/5G backup**) with seeded carrier assignment, **contracted
+  vs measured availability** (correlated with each site's real uptime), latency,
+  jitter and loss, **cost per Mbps** and a seeded **carrier scorecard** blending
+  reliability, latency and price. The WAN page ranks carriers, tracks **redundancy
+  (sites with a diverse backup)** and raises findings for **SLA breaches,
+  single-homed sites, degraded backups, capacity pressure and cost outliers**.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -228,8 +235,8 @@ keys and no paid services.
   A share link (`?seed=…`) reproduces a topology; arbitrary strings are hashed
   into seeds.
 - **UX & accessibility** — a **grouped, collapsible sidebar** (Overview, Deep
-  Dive, Plan & Test, Governance, Security, Operations, Response and Insights)
-  that keeps the
+  Dive, Plan & Test, Governance, Security, Transport, Operations, Response and
+  Insights) that keeps the
   nav scroll-contained instead of overflowing the page, auto-expands the active
   section and collapses to an icon rail; plus a compact header, mobile drawer,
   keyboard operability, skip-to-content, `prefers-reduced-motion` support,
@@ -331,7 +338,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, wireless, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, wireless, wan, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -387,7 +394,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-707 unit tests across 60 suites cover the pure, high-value logic:
+748 unit tests across 61 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -439,6 +446,9 @@ npm run test          # or: npm run test:coverage
 - the **wireless/RF engine** (SSID profiles, dual-radio channel planning,
   co-channel and congestion detection, client/RSSI derivation, rogue scoring,
   coverage requirements and the severity-ranked findings feed),
+- the **WAN/carrier engine** (circuit planning per site, contracted vs measured
+  availability maths, cost-per-Mbps, the blended carrier scorecard, redundancy
+  and capacity/SLA findings),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
