@@ -30,6 +30,11 @@ const LifecyclePage = lazy(() =>
 const SecurityPage = lazy(() =>
   import('@/pages/SecurityPage').then((m) => ({ default: m.SecurityPage })),
 )
+const VulnerabilitiesPage = lazy(() =>
+  import('@/pages/VulnerabilitiesPage').then((m) => ({
+    default: m.VulnerabilitiesPage,
+  })),
+)
 const RoutingPage = lazy(() =>
   import('@/pages/RoutingPage').then((m) => ({ default: m.RoutingPage })),
 )
@@ -223,6 +228,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <SecurityPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="vulnerabilities"
+            element={
+              <ErrorBoundary>
+                <VulnerabilitiesPage />
               </ErrorBoundary>
             }
           />

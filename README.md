@@ -88,6 +88,14 @@ keys and no paid services.
   **threat feed** with per-event **Contain** / **False positive** triage
   (containment raises a real timeline incident), a **top-targeted** panel and a
   **security score/grade** rollup.
+- **Vulnerabilities** — a deterministic **CVE scan** that matches a catalogue of
+  remote-code-execution, auth-bypass, injection and DoS advisories against the
+  fleet by device type, with **CVSS scoring**, **public-exploit** flags and
+  **remediation SLAs** (critical 7 days, high 14, medium 30). The page shows a
+  **patch queue** ranked exploit → CVSS → age, per-device **risk** (CVSS ×2 when
+  exploited), **patch-compliance %**, overdue tracking, a **no-vendor-patch**
+  escalation list and **Patch / Accept risk / Reopen** actions that persist and
+  write real timeline events.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -345,7 +353,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -401,7 +409,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-784 unit tests across 62 suites cover the pure, high-value logic:
+806 unit tests across 63 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -444,6 +452,9 @@ npm run test          # or: npm run test:coverage
 - the **security detection engine** (MITRE ATT&CK technique detectors over
   fleet/flow/geo, confidence and severity scoring, disposition merging,
   the ATT&CK heat map, top-target ranking and the score/grade rollup),
+- the **vulnerability engine** (CVSS→severity and SLA mapping, seeded CVE
+  matching by device type, patch-queue ranking, weighted device risk, overdue
+  detection and patch-compliance/ exposure scoring),
 - the **routing intelligence engine** (deterministic BGP sessions, OSPF areas
   and adjacency state, Dijkstra-derived routing tables, suboptimal-path and
   blackhole detection, convergence timelines and control-plane health),
