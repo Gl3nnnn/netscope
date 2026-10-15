@@ -110,6 +110,13 @@ keys and no paid services.
   fails. The page tracks **posture compliance %**, **auth-failure storms**,
   MAB-only servers, guest overstay, EAP-TLS adoption — and **Quarantine / Release**
   actions that persist across reloads and write device events to the timeline.
+- **Attack Paths** — a **cross-engine exposure graph**: open management ports,
+  critical CVEs (honouring live patch dispositions) and expired certificates
+  (honouring renewal overrides) become entry points, traversed over the derived
+  topology toward P1/P2 business services. A bounded search ranks **entry →
+  lateral → target** paths by severity-weighted **risk scores** (0–100), and
+  **choke-point analysis** names the intermediate device that breaks the most
+  paths — with concrete mitigations (patch, rotate, ACL, segment).
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -387,7 +394,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -443,7 +450,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-897 unit tests across 68 suites cover the pure, high-value logic:
+917 unit tests across 69 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -513,6 +520,9 @@ npm run test          # or: npm run test:coverage
 - the **NAC engine** (endpoint generation, auth-method assignment, posture
   evaluation with hardware exemptions, quarantine overlays, finding rules and
   fleet compliance rollups),
+- the **attack-path engine** (exposure derivation across vuln/cert/config
+  sources, hop-budgeted graph search, severity-weighted risk scoring, choke-point
+  counting and mitigation synthesis),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),

@@ -38,6 +38,11 @@ const VulnerabilitiesPage = lazy(() =>
 const NacPage = lazy(() =>
   import('@/pages/NacPage').then((m) => ({ default: m.NacPage })),
 )
+const AttackPathsPage = lazy(() =>
+  import('@/pages/AttackPathsPage').then((m) => ({
+    default: m.AttackPathsPage,
+  })),
+)
 const RoutingPage = lazy(() =>
   import('@/pages/RoutingPage').then((m) => ({ default: m.RoutingPage })),
 )
@@ -263,6 +268,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <NacPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="attack-paths"
+            element={
+              <ErrorBoundary>
+                <AttackPathsPage />
               </ErrorBoundary>
             }
           />
