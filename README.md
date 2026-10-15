@@ -117,6 +117,14 @@ keys and no paid services.
   lateral → target** paths by severity-weighted **risk scores** (0–100), and
   **choke-point analysis** names the intermediate device that breaks the most
   paths — with concrete mitigations (patch, rotate, ACL, segment).
+- **DR & Backup** — a full disaster-recovery programme: every device gets a
+  **backup job** (database/config/image/app) with a kind-derived **RPO target**
+  and a service-tier-derived **RTO target**. Each tick simulates the latest run
+  (failures, staleness, RPO misses) and every job gets a **restore test**
+  measuring actual versus target RTO. **Findings** flag failed/stale backups and
+  RTO breaches; the **Run DR drill** action exercises all P1/P2 jobs, files a
+  CAB change and writes a timeline event, with the drill history kept in the
+  store.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -394,7 +402,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -450,7 +458,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-917 unit tests across 69 suites cover the pure, high-value logic:
+933 unit tests across 70 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -523,6 +531,9 @@ npm run test          # or: npm run test:coverage
 - the **attack-path engine** (exposure derivation across vuln/cert/config
   sources, hop-budgeted graph search, severity-weighted risk scoring, choke-point
   counting and mitigation synthesis),
+- the **DR engine** (backup-job seeding, kind-derived RPO and tier-derived RTO
+  targets, per-tick run simulation, restore testing, drill records and
+  fail/stale/RPO/RTO finding rules),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),

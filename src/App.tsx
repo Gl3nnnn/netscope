@@ -88,6 +88,9 @@ const CertificatesPage = lazy(() =>
 const ChangesPage = lazy(() =>
   import('@/pages/ChangesPage').then((m) => ({ default: m.ChangesPage })),
 )
+const RecoveryPage = lazy(() =>
+  import('@/pages/RecoveryPage').then((m) => ({ default: m.RecoveryPage })),
+)
 const ReportsPage = lazy(() =>
   import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 )
@@ -508,6 +511,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <ChangesPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="recovery"
+            element={
+              <ErrorBoundary>
+                <RecoveryPage />
               </ErrorBoundary>
             }
           />
