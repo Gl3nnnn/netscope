@@ -94,6 +94,11 @@ const RecoveryPage = lazy(() =>
 const FinopsPage = lazy(() =>
   import('@/pages/FinopsPage').then((m) => ({ default: m.FinopsPage })),
 )
+const CarrierBillingPage = lazy(() =>
+  import('@/pages/CarrierBillingPage').then((m) => ({
+    default: m.CarrierBillingPage,
+  })),
+)
 const ReportsPage = lazy(() =>
   import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })),
 )
@@ -322,6 +327,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <VoicePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="carrier-billing"
+            element={
+              <ErrorBoundary>
+                <CarrierBillingPage />
               </ErrorBoundary>
             }
           />

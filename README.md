@@ -133,6 +133,14 @@ keys and no paid services.
   ranked **savings recommendations** — circuit right-sizing (demand vs
   provisioned bandwidth), decommissioning idle refresh-queued devices, and
   licence consolidation.
+- **Carrier Credits** — **SLA-credit billing reconciliation** over every WAN
+  circuit: measured availability below the contracted SLA earns a tiered
+  service credit (10/25/50% of the monthly fee, standard carrier curve). The
+  engine models what the carrier _actually_ credited and invoiced (seeded
+  discrepancies), then surfaces **missing credits**, **under-credits** and
+  **invoice mismatches** as recoverable amounts, dispute findings and a
+  per-carrier rollup — the CFO-facing money-owed view that complements FinOps
+  spend.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -410,7 +418,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -466,7 +474,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-946 unit tests across 71 suites cover the pure, high-value logic:
+959 unit tests across 72 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -545,6 +553,9 @@ npm run test          # or: npm run test:coverage
 - the **FinOps engine** (cross-source cost ledger, per-site rollups, budget
   variance, 12-month forecast, and savings recommendations over circuits,
   idle devices and licences),
+- the **carrier-billing engine** (tiered SLA-credit table, seeded
+  invoice/credit discrepancies, recoverable-amount maths, dispute findings and
+  per-carrier rollups),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),
