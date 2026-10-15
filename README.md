@@ -40,6 +40,13 @@ keys and no paid services.
   ports, healthy devices…), rolls findings up by severity and category into a
   compliance score and a weighted risk score, and supports **documented waivers**
   per rule and device.
+- **Certificates** — a per-device **PKI inventory** (server, client, mTLS and CA
+  certs) with issuer mix (internal CA / Let's Encrypt / DigiCert / self-signed),
+  **key strength** checks against RSA-2048 and ECDSA-256 baselines, **SANs** and
+  **expiry tracking** bucketed ≤7 d / ≤30 d / ≤90 d. Findings cover **expired,
+  expiring, weak-key and self-signed** certificates with severity, and **Renew**
+  reissues the certificate for 365 days, persists the new expiry and **files a
+  CAB change** (emergency type when already expired).
 - **Change management (CAB)** — raise, review, approve, schedule, implement and
   verify change requests through a full workflow (draft → review → approved →
   scheduled → implementing → verifying → closed, with rejected/cancelled/rollback
@@ -360,7 +367,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -416,7 +423,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-826 unit tests across 64 suites cover the pure, high-value logic:
+845 unit tests across 65 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -439,6 +446,9 @@ npm run test          # or: npm run test:coverage
 - the **compliance rule engine** (per-type applicability, config/policy/health
   predicates, category and severity rollups, scoring, waiver keys and weighted
   risk),
+- the **certificate engine** (seeded PKI inventory, key-strength baselines,
+  expiry bucketing, finding generation with severity, renewal reissue and
+  override overlays),
 - the **change workflow** (state-transition legality, approver stamping, risk
   scoring from scope/type/service tier, window states, overdue detection, schedule
   conflicts, the approval queue and drift-based verification),

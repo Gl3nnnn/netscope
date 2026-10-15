@@ -16,6 +16,7 @@ import {
   Globe2,
   HeartPulse,
   History,
+  KeyRound,
   LayoutDashboard,
   LayoutGrid,
   Leaf,
@@ -208,6 +209,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Compliance',
         icon: FileCheck2,
         description: 'Hardening audit and waivers',
+      },
+      {
+        to: '/certificates',
+        label: 'Certificates',
+        icon: KeyRound,
+        description: 'Expiry, rotation and CAB',
       },
       {
         to: '/changes',
