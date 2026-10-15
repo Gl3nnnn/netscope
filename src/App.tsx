@@ -36,6 +36,9 @@ const RoutingPage = lazy(() =>
 const QosPage = lazy(() =>
   import('@/pages/QosPage').then((m) => ({ default: m.QosPage })),
 )
+const WirelessPage = lazy(() =>
+  import('@/pages/WirelessPage').then((m) => ({ default: m.WirelessPage })),
+)
 const TracerPage = lazy(() =>
   import('@/pages/TracerPage').then((m) => ({ default: m.TracerPage })),
 )
@@ -230,6 +233,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <QosPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="wireless"
+            element={
+              <ErrorBoundary>
+                <WirelessPage />
               </ErrorBoundary>
             }
           />

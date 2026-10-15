@@ -102,6 +102,13 @@ keys and no paid services.
   and tail drops**, detects **starved classes** and **priority inversion**, and
   offers a **clone-only what-if reshaper** that evaluates candidate weight
   policies (voice-first, batch-friendly, equal-share) without touching state.
+- **Wireless & RF** — a simulated WLAN estate with per-site **SSID profiles**
+  (WPA3-Enterprise / WPA3 / WPA2 / captive guest) and **dual-radio channel
+  plans** across 2.4 and 5 GHz, greedy least-loaded assignment, **co-channel
+  interference** and **congestion** detection, simulated **client density**,
+  **RSSI/SNR** and weak-client ratios, **rogue-AP detection** with confidence
+  scoring, per-site **coverage planning** (APs deployed vs required) and a
+  severity-ranked findings feed with a **wireless health score**.
 - **Device Inventory** — search, filter, sort, add, edit and delete devices, with
   validated **JSON import/export**. Invalid imports are rejected before any state
   changes. Filters are reflected in the URL (`/devices?site=…`) so views are
@@ -324,7 +331,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, routing, qos, wireless, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -380,7 +387,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-658 unit tests across 59 suites cover the pure, high-value logic:
+707 unit tests across 60 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -429,6 +436,9 @@ npm run test          # or: npm run test:coverage
 - the **QoS engine** (application→class classification, DSCP marking and
   weighted-fair allocation, tail-drop maths, starvation and priority-inversion
   detection, policy scoring and the clone-only what-if reshaper),
+- the **wireless/RF engine** (SSID profiles, dual-radio channel planning,
+  co-channel and congestion detection, client/RSSI derivation, rogue scoring,
+  coverage requirements and the severity-ranked findings feed),
 - **runbook** matching plus the auto-remediation store action,
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric

@@ -35,6 +35,7 @@ import {
   Sparkles,
   Telescope,
   Waypoints,
+  Wifi,
   Workflow,
   type LucideIcon,
 } from 'lucide-react'
@@ -136,6 +137,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'QoS',
         icon: Gauge,
         description: 'Classes, DSCP & queue health',
+      },
+      {
+        to: '/wireless',
+        label: 'Wireless',
+        icon: Wifi,
+        description: 'SSIDs, channels & coverage',
       },
     ],
   },
