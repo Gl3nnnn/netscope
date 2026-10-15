@@ -173,6 +173,13 @@ device:rtr free text`). The stream can be **paused/frozen** while you read and
   testable engine evaluates every device each tick, moving alerts through
   **pending → firing → resolved**, surfacing toasts, a header firing count and a
   dedicated **Alerts** page with active, rule and history views.
+- **AIOps correlation (Problems)** — firing alerts and open incidents are
+  grouped into **problems** by four signals inside a 5-minute window: **shared
+  device**, **topology proximity ≤2 hops**, **shared site** and **shared
+  business service**. Groups get a **root cause** ranked by the dependency
+  graph, a **confidence score**, multi-signal evidence chips, persisted
+  **acknowledgements** (recorded on the timeline) and a **noise-reduction**
+  rollup; uncorrelated signals are listed separately as **singles**.
 - **NOC wallboard** — press `W` for a full-screen, chrome-less kiosk view that
   auto-rotates between fleet KPIs, a throughput trend, top utilisation and the
   live incident/alert queue, with a rotation progress bar and click-to-pin dots.
@@ -353,7 +360,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -409,7 +416,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-806 unit tests across 63 suites cover the pure, high-value logic:
+826 unit tests across 64 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -474,6 +481,9 @@ npm run test          # or: npm run test:coverage
 - incident **postmortem** assembly and Markdown/JSON rendering,
 - the **alert rules engine** (operator comparison, scope matching, metric
   derivation and pending → firing → resolved transitions),
+- the **AIOps correlation engine** (device/topology/site/service signals in a
+  time window, union-find grouping, root-cause ranking, confidence scoring,
+  noise-reduction maths and acknowledgement overlay),
 - **wallboard panel rotation** indexing and progress,
 - the **explorer query language** (token parsing, alias resolution, field and
   metric-comparison matching) and time-window **series alignment**,

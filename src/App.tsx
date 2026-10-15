@@ -111,6 +111,9 @@ const SettingsPage = lazy(() =>
 const AlertsPage = lazy(() =>
   import('@/pages/AlertsPage').then((m) => ({ default: m.AlertsPage })),
 )
+const ProblemsPage = lazy(() =>
+  import('@/pages/ProblemsPage').then((m) => ({ default: m.ProblemsPage })),
+)
 const ExplorerPage = lazy(() =>
   import('@/pages/ExplorerPage').then((m) => ({ default: m.ExplorerPage })),
 )
@@ -388,6 +391,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <AlertsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="problems"
+            element={
+              <ErrorBoundary>
+                <ProblemsPage />
               </ErrorBoundary>
             }
           />

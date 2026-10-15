@@ -11,6 +11,7 @@ import {
   FileCheck2,
   FlaskConical,
   Gauge,
+  GitMerge,
   GitPullRequest,
   Globe2,
   HeartPulse,
@@ -302,6 +303,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: 'Alerts',
         icon: BellRing,
         description: 'Custom rule alerts',
+      },
+      {
+        to: '/problems',
+        label: 'Problems',
+        icon: GitMerge,
+        description: 'Correlated alerts & incidents',
       },
       {
         to: '/oncall',
