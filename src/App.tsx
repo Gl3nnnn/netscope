@@ -47,6 +47,9 @@ const WirelessPage = lazy(() =>
 const WanPage = lazy(() =>
   import('@/pages/WanPage').then((m) => ({ default: m.WanPage })),
 )
+const VoicePage = lazy(() =>
+  import('@/pages/VoicePage').then((m) => ({ default: m.VoicePage })),
+)
 const TracerPage = lazy(() =>
   import('@/pages/TracerPage').then((m) => ({ default: m.TracerPage })),
 )
@@ -281,6 +284,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <WanPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="voice"
+            element={
+              <ErrorBoundary>
+                <VoicePage />
               </ErrorBoundary>
             }
           />

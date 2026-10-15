@@ -137,6 +137,13 @@ keys and no paid services.
   **Apdex scoring** (T = 300 ms), **30-minute availability** and latency sparklines,
   per-site rollups with worst-status ordering, and a fleet **experience score**
   blending Apdex and availability. Failing checks list the phase that broke.
+- **Voice & UC** — simulated SIP traffic scored with a dependency-free **ITU-T
+  G.107 E-model**: per-call RTT, jitter and loss map through codec impairment
+  (G.711 / G.729 / Opus) to a **mean-opinion score**, graded Excellent → Poor
+  against **jitter (30 ms) and loss (1 %) budgets**. Trunks bind to the WAN
+  circuit inventory for carrier and redundancy context, with 30-minute MOS
+  sparklines, codec-mix analytics and findings for budget breaches, legacy
+  codecs and single-homed trunks.
 - **Logs** — a simulated **syslog tail** blending the live timeline event stream
   with per-device application lines (auth, BGP/OSPF, TLS, DHCP, config, audit),
   **pattern clustering** that fingerprints messages after normalising IPs, MACs
@@ -373,7 +380,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -429,7 +436,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-862 unit tests across 66 suites cover the pure, high-value logic:
+883 unit tests across 67 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -493,6 +500,9 @@ npm run test          # or: npm run test:coverage
 - the **digital experience engine** (synthetic journey waterfalls, seeded jitter
   and failure rolls, Apdex/status thresholds, sliding availability windows and
   site/fleet rollups),
+- the **voice quality engine** (E-model delay/loss impairment per codec, MOS
+  grading and quality buckets, trunk-to-circuit binding, budget findings and
+  sliding site MOS history),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),
