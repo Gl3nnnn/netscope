@@ -94,6 +94,9 @@ const RecoveryPage = lazy(() =>
 const FinopsPage = lazy(() =>
   import('@/pages/FinopsPage').then((m) => ({ default: m.FinopsPage })),
 )
+const MaturityPage = lazy(() =>
+  import('@/pages/MaturityPage').then((m) => ({ default: m.MaturityPage })),
+)
 const CarrierBillingPage = lazy(() =>
   import('@/pages/CarrierBillingPage').then((m) => ({
     default: m.CarrierBillingPage,
@@ -554,6 +557,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <FinopsPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="maturity"
+            element={
+              <ErrorBoundary>
+                <MaturityPage />
               </ErrorBoundary>
             }
           />

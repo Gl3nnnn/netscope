@@ -148,6 +148,12 @@ keys and no paid services.
   breaches become graded findings (leak/smoke critical, hot spots high,
   over-cooling/humidity medium, door-open low) with hot-spot detection
   correlated against live facility watts.
+- **Maturity Scorecard** — a **CMM-style rollup** across eight weighted domains
+  (fleet health, routing, WAN, resilience, security, QoS, environment and
+  compliance) into one **maturity index** graded 1 Initial → 5 Optimizing. The
+  page renders an SVG **domain radar**, a level ladder, per-domain score bars
+  and a **gap analysis** whose three weakest domains feed a **prioritised
+  improvement roadmap** (impact ÷ effort ranking with recommended actions).
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -425,7 +431,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling, facility
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling, facility, maturity
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -481,7 +487,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-973 unit tests across 73 suites cover the pure, high-value logic:
+982 unit tests across 74 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -566,6 +572,8 @@ npm run test          # or: npm run test:coverage
 - the **facility sensor engine** (per-site sensor generation, ASHRAE-band
   readings, leak/smoke/door state flips, graded environmental findings and
   site status rollups),
+- the **maturity scorecard engine** (weighted eight-domain CMM rollup, level
+  thresholds, gap analysis and the impact÷effort improvement roadmap),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),
