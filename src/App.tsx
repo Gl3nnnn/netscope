@@ -102,6 +102,9 @@ const CarrierBillingPage = lazy(() =>
     default: m.CarrierBillingPage,
   })),
 )
+const SdwanPage = lazy(() =>
+  import('@/pages/SdwanPage').then((m) => ({ default: m.SdwanPage })),
+)
 const FacilityPage = lazy(() =>
   import('@/pages/FacilityPage').then((m) => ({ default: m.FacilityPage })),
 )
@@ -352,6 +355,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <CarrierBillingPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="sdwan"
+            element={
+              <ErrorBoundary>
+                <SdwanPage />
               </ErrorBoundary>
             }
           />

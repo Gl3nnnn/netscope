@@ -160,6 +160,12 @@ keys and no paid services.
   ranks the fleet by risk band (critical → low), shows **remaining useful
   life**, the **top risk contributor** with its share of the composite score
   and a concrete recommended action — the "what breaks next" view.
+- **SD-WAN Steering** — an **overlay per underlay circuit**: every WAN circuit
+  becomes a scored tunnel, watched for **brownouts** (loss > 2%, jitter > 30 ms,
+  latency > 150 ms or down). Classified flows are **steered by traffic class**
+  (realtime → MPLS, bulk → broadband, …) onto the healthiest matching path,
+  with automatic **failover** the moment the preferred underlay degrades —
+  per-class steering stats, a brownout event feed and the active-failover list.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -437,7 +443,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling, facility, maturity, prediction
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling, facility, maturity, prediction, sdwan
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -493,7 +499,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-998 unit tests across 75 suites cover the pure, high-value logic:
+1015 unit tests across 76 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -583,6 +589,8 @@ npm run test          # or: npm run test:coverage
 - the **predictive failure engine** (age/health/saturation/trend risk blending,
   seeded per-type MTBF, 90-day failure probability, RUL estimates, contributor
   shares and dominant-factor actions),
+- the **SD-WAN steering engine** (path-quality scoring, brownout detection,
+  class-based path preference, failover decisions and site/class rollups),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),
