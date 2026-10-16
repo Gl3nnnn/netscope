@@ -161,6 +161,9 @@ const ExperiencePage = lazy(() =>
     default: m.ExperiencePage,
   })),
 )
+const PredictionPage = lazy(() =>
+  import('@/pages/PredictionPage').then((m) => ({ default: m.PredictionPage })),
+)
 const StatusPage = lazy(() =>
   import('@/pages/StatusPage').then((m) => ({ default: m.StatusPage })),
 )
@@ -517,6 +520,14 @@ export function App() {
             element={
               <ErrorBoundary>
                 <ExperiencePage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="prediction"
+            element={
+              <ErrorBoundary>
+                <PredictionPage />
               </ErrorBoundary>
             }
           />

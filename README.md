@@ -154,6 +154,12 @@ keys and no paid services.
   page renders an SVG **domain radar**, a level ladder, per-domain score bars
   and a **gap analysis** whose three weakest domains feed a **prioritised
   improvement roadmap** (impact ÷ effort ranking with recommended actions).
+- **Predictive Failure** — a **90-day failure-probability model** per device,
+  blending lifecycle age, current health, CPU/memory saturation and a
+  latency/loss **trend slope** against a seeded per-type **MTBF**. The page
+  ranks the fleet by risk band (critical → low), shows **remaining useful
+  life**, the **top risk contributor** with its share of the composite score
+  and a concrete recommended action — the "what breaks next" view.
 - **Routing intelligence** — a deterministic control plane over the derived
   topology: **autonomous systems** (local + peer), **BGP peering sessions** with
   per-session state and prefix counts, **OSPF areas** and adjacency state, and a
@@ -431,7 +437,7 @@ src/
 │   └── {alerts,monitors,channels,automation,dashboard,devices,...}/
 ├── config/            # navigation definition
 ├── hooks/             # useSimulation, useTheme, useAlertToasts, useHotkeys
-├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling, facility, maturity
+├── lib/               # format, health, tracer, planner, resilience, policy, reachability, oncall, configdiff, configs, compliance, certificates, changes, geo, flow, interfaces, ipam, environment, lifecycle, security, vulnerabilities, correlation, routing, qos, wireless, wan, logs, reports, services, playbooks, replay, copilot, warroom, alerts, monitors, channels, experience, voice, nac, attackpath, recovery, finops, carrierbilling, facility, maturity, prediction
 ├── pages/             # one component per route (lazily loaded)
 ├── simulation/        # seeded PRNG, seed data, metric walk, incident engine
 ├── storage/           # debounced localStorage + JSON import/export validation
@@ -487,7 +493,7 @@ src/
 npm run test          # or: npm run test:coverage
 ```
 
-982 unit tests across 74 suites cover the pure, high-value logic:
+998 unit tests across 75 suites cover the pure, high-value logic:
 
 - seeded PRNG determinism, bounds and seed-parameter hashing,
 - health-score and severity mapping,
@@ -574,6 +580,9 @@ npm run test          # or: npm run test:coverage
   site status rollups),
 - the **maturity scorecard engine** (weighted eight-domain CMM rollup, level
   thresholds, gap analysis and the impact÷effort improvement roadmap),
+- the **predictive failure engine** (age/health/saturation/trend risk blending,
+  seeded per-type MTBF, 90-day failure probability, RUL estimates, contributor
+  shares and dominant-factor actions),
 - the **log analytics engine** (deterministic syslog generation from timeline
   events, pattern fingerprinting with token normalisation, severity histograms,
   level/facility summaries and the level/site/device/facility query language),
